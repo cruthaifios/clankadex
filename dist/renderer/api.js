@@ -18,14 +18,19 @@ export async function startModel(id) {
     const res = await fetch(`${BASE}/api/models/${id}/start`, { method: 'POST' });
     return res.json();
 }
-export async function stopModel() {
-    await fetch(`${BASE}/api/models/stop`, { method: 'POST' });
+export async function stopModel(id) {
+    if (id) {
+        await fetch(`${BASE}/api/models/${id}/stop`, { method: 'POST' });
+    }
+    else {
+        await fetch(`${BASE}/api/models/stop`, { method: 'POST' });
+    }
 }
-export async function sendChat(prompt) {
+export async function sendChat(prompt, modelId) {
     const res = await fetch(`${BASE}/api/models/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, modelId }),
     });
     return res.json();
 }

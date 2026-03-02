@@ -7,15 +7,19 @@ export const modelRouter = Router();
 
 interface RunningModel {
   modelId: string;
-  process: ChildProcess;
+  process: ChildProcess | null;  // null for remote models
   outputBuffer: string;
-  serverPort: number;
+  host: string;
+  port: number;
+  remote: boolean;
 }
 
-let runningModel: RunningModel | null = null;
+let runningModels: Map<string, RunningModel> = new Map();
 
 export function getRunningProcess(): RunningModel | null {
-  return runningModel;
+  // Return first running model for WS buffer compat
+  const first = runningModels.values().next();
+  return first.done ? null : first.value;
 }
 
 function broadcast(msg: object) {
@@ -25,28 +29,39 @@ function broadcast(msg: object) {
 // List models
 modelRouter.get('/', (_req: Request, res: Response) => {
   const models = getModels();
-  const running = runningModel?.modelId || null;
-  res.json({ models, runningModelId: running });
+  const runningModelIds = Array.from(runningModels.keys());
+  res.json({ models, runningModelId: runningModelIds[0] || null, runningModelIds });
 });
 
 // Add model
 modelRouter.post('/', (req: Request, res: Response) => {
-  const { name, filePath, format, contextSize, gpuLayers, notes } = req.body;
-  if (!name || !filePath) {
-    res.status(400).json({ error: 'name and filePath are required' });
+  const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port } = req.body;
+  if (!name) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+  if (!remote && !filePath) {
+    res.status(400).json({ error: 'filePath is required for local models' });
+    return;
+  }
+  if (remote && (!host || !port)) {
+    res.status(400).json({ error: 'host and port are required for remote models' });
     return;
   }
   const models = getModels();
   const entry: ModelEntry = {
     id: randomUUID(),
     name,
-    filePath,
+    filePath: filePath || '',
     format: format || 'gguf',
     sizeBytes: null,
     contextSize: contextSize || 2048,
     gpuLayers: gpuLayers || 0,
     notes: notes || '',
     addedAt: new Date().toISOString(),
+    remote: !!remote,
+    host: host || '127.0.0.1',
+    port: port || 8080,
   };
   models.push(entry);
   saveModels(models);
@@ -55,6 +70,13 @@ modelRouter.post('/', (req: Request, res: Response) => {
 
 // Delete model
 modelRouter.delete('/:id', (req: Request, res: Response) => {
+  // Stop if running
+  const running = runningModels.get(req.params.id);
+  if (running) {
+    if (running.process) running.process.kill('SIGTERM');
+    runningModels.delete(req.params.id);
+    broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
+  }
   let models = getModels();
   models = models.filter(m => m.id !== req.params.id);
   saveModels(models);
@@ -62,22 +84,42 @@ modelRouter.delete('/:id', (req: Request, res: Response) => {
 });
 
 // Start model
-modelRouter.post('/:id/start', (req: Request, res: Response) => {
-  if (runningModel) {
-    res.status(409).json({ error: 'A model is already running. Stop it first.' });
-    return;
-  }
+modelRouter.post('/:id/start', async (req: Request, res: Response) => {
   const models = getModels();
   const model = models.find(m => m.id === req.params.id);
   if (!model) { res.status(404).json({ error: 'Model not found' }); return; }
 
+  if (runningModels.has(model.id)) {
+    res.status(409).json({ error: 'This model is already running.' });
+    return;
+  }
+
+  if (model.remote) {
+    // For remote models, just verify connectivity
+    const host = model.host || '127.0.0.1';
+    const port = model.port || 8080;
+    try {
+      const resp = await fetch(`http://${host}:${port}/health`);
+      // Accept any response as "reachable"; some servers don't have /health
+    } catch (_err) {
+      // Still register it — user may want to connect even if health check fails
+    }
+    const rm: RunningModel = { modelId: model.id, process: null, outputBuffer: `[Connected to remote server at ${host}:${port}]\n`, host, port, remote: true };
+    runningModels.set(model.id, rm);
+    broadcast({ type: 'output', data: rm.outputBuffer });
+    broadcast({ type: 'status', status: 'running', modelId: model.id });
+    res.json({ ok: true, host, port });
+    return;
+  }
+
+  // Local model
   const config = getConfig();
   if (!config.llamaCppPath) {
     res.status(400).json({ error: 'llama.cpp path not configured. Go to Settings.' });
     return;
   }
 
-  const serverPort = config.serverPort || 8080;
+  const serverPort = model.port || config.serverPort || 8080;
   const args = [
     '--model', model.filePath,
     '--ctx-size', String(model.contextSize),
@@ -92,42 +134,60 @@ modelRouter.post('/:id/start', (req: Request, res: Response) => {
   const appendOutput = (chunk: Buffer) => {
     const text = chunk.toString();
     outputBuffer += text;
-    // Keep buffer from growing unbounded
     if (outputBuffer.length > 100000) outputBuffer = outputBuffer.slice(-80000);
+    const rm = runningModels.get(model.id);
+    if (rm) rm.outputBuffer = outputBuffer;
     broadcast({ type: 'output', data: text });
   };
 
   proc.stdout?.on('data', appendOutput);
   proc.stderr?.on('data', appendOutput);
   proc.on('exit', (code) => {
-    broadcast({ type: 'status', status: 'stopped', code });
-    runningModel = null;
+    broadcast({ type: 'status', status: 'stopped', modelId: model.id, code });
+    runningModels.delete(model.id);
   });
 
-  runningModel = { modelId: model.id, process: proc, outputBuffer, serverPort };
-  // Keep outputBuffer reference updated
-  proc.stdout?.on('data', () => { if (runningModel) runningModel.outputBuffer = outputBuffer; });
-  proc.stderr?.on('data', () => { if (runningModel) runningModel.outputBuffer = outputBuffer; });
+  runningModels.set(model.id, { modelId: model.id, process: proc, outputBuffer, host: '127.0.0.1', port: serverPort, remote: false });
 
   broadcast({ type: 'status', status: 'running', modelId: model.id });
   res.json({ ok: true, port: serverPort });
 });
 
-// Stop model
+// Stop model (by id or stop first running)
 modelRouter.post('/stop', (_req: Request, res: Response) => {
-  if (!runningModel) { res.status(404).json({ error: 'No model running' }); return; }
-  runningModel.process.kill('SIGTERM');
-  runningModel = null;
-  broadcast({ type: 'status', status: 'stopped' });
+  if (runningModels.size === 0) { res.status(404).json({ error: 'No model running' }); return; }
+  // Stop first running model
+  const [id, rm] = runningModels.entries().next().value!;
+  if (rm.process) rm.process.kill('SIGTERM');
+  runningModels.delete(id);
+  broadcast({ type: 'status', status: 'stopped', modelId: id });
   res.json({ ok: true });
 });
 
-// Chat (proxy to llama-server)
+// Stop specific model
+modelRouter.post('/:id/stop', (req: Request, res: Response) => {
+  const rm = runningModels.get(req.params.id);
+  if (!rm) { res.status(404).json({ error: 'Model not running' }); return; }
+  if (rm.process) rm.process.kill('SIGTERM');
+  runningModels.delete(req.params.id);
+  broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
+  res.json({ ok: true });
+});
+
+// Chat (proxy to the model's own server)
 modelRouter.post('/chat', async (req: Request, res: Response) => {
-  if (!runningModel) { res.status(400).json({ error: 'No model running' }); return; }
+  // Find the target model — prefer modelId from body, else first running
+  const targetId = req.body.modelId;
+  let rm: RunningModel | undefined;
+  if (targetId) {
+    rm = runningModels.get(targetId);
+  } else {
+    rm = runningModels.values().next().value;
+  }
+  if (!rm) { res.status(400).json({ error: 'No model running' }); return; }
+
   try {
-    const port = runningModel.serverPort;
-    const response = await fetch(`http://127.0.0.1:${port}/completion`, {
+    const response = await fetch(`http://${rm.host}:${rm.port}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: req.body.prompt, n_predict: req.body.n_predict || 256 }),
@@ -135,6 +195,6 @@ modelRouter.post('/chat', async (req: Request, res: Response) => {
     const data = await response.json();
     res.json(data);
   } catch (err: any) {
-    res.status(502).json({ error: 'Failed to reach model server: ' + err.message });
+    res.status(502).json({ error: `Failed to reach model server at ${rm.host}:${rm.port}: ${err.message}` });
   }
 });

@@ -10,11 +10,12 @@ interface Props {
   models: ModelEntry[];
   selectedId: string | null;
   runningModelId: string | null;
+  runningModelIds?: string[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function Sidebar({ models, selectedId, runningModelId, onSelect, onDelete }: Props) {
+export function Sidebar({ models, selectedId, runningModelId, runningModelIds = [], onSelect, onDelete }: Props) {
   return (
     <Box sx={{
       width: 280, bgcolor: '#16162a', borderRight: '1px solid', borderColor: 'divider',
@@ -51,12 +52,12 @@ export function Sidebar({ models, selectedId, runningModelId, onSelect, onDelete
               <ListItemIcon sx={{ minWidth: 28 }}>
                 <CircleIcon sx={{
                   fontSize: 10,
-                  color: m.id === runningModelId ? 'primary.main' : 'grey.700',
+                  color: runningModelIds.includes(m.id) ? 'primary.main' : 'grey.700',
                 }} />
               </ListItemIcon>
               <ListItemText
                 primary={m.name}
-                secondary={m.format.toUpperCase()}
+                secondary={m.remote ? `REMOTE · ${m.host}:${m.port}` : m.format.toUpperCase()}
                 primaryTypographyProps={{ fontSize: 14 }}
                 secondaryTypographyProps={{ fontSize: 11 }}
               />

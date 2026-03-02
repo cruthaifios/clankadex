@@ -8,6 +8,9 @@ export interface ModelEntry {
   gpuLayers: number;
   notes: string;
   addedAt: string;
+  remote: boolean;
+  host: string;
+  port: number;
 }
 
 export interface AppConfig {

@@ -15,6 +15,7 @@ import { SettingsPanel } from './SettingsPanel';
 export function App() {
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [runningModelId, setRunningModelId] = useState<string | null>(null);
+  const [runningModelIds, setRunningModelIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [terminalOutput, setTerminalOutput] = useState('');
   const [chatInput, setChatInput] = useState('');
@@ -28,6 +29,7 @@ export function App() {
     const data = await api.fetchModels();
     setModels(data.models);
     setRunningModelId(data.runningModelId);
+    setRunningModelIds(data.runningModelIds || []);
   }, []);
 
   useEffect(() => { loadModels(); }, [loadModels]);
@@ -56,7 +58,7 @@ export function App() {
   }, [terminalOutput]);
 
   const selectedModel = models.find(m => m.id === selectedId) || null;
-  const isRunning = selectedModel?.id === runningModelId;
+  const isRunning = selectedModel ? runningModelIds.includes(selectedModel.id) : false;
 
   const handleStart = async () => {
     if (!selectedModel) return;
@@ -67,7 +69,8 @@ export function App() {
   };
 
   const handleStop = async () => {
-    await api.stopModel();
+    if (selectedModel) await api.stopModel(selectedModel.id);
+    else await api.stopModel();
     loadModels();
   };
 
@@ -77,7 +80,7 @@ export function App() {
     setChatInput('');
     setTerminalOutput(prev => prev + `\n> ${prompt}\n`);
     try {
-      const result = await api.sendChat(prompt);
+      const result = await api.sendChat(prompt, selectedModel?.id);
       if (result.content) setTerminalOutput(prev => prev + result.content + '\n');
       else if (result.error) setTerminalOutput(prev => prev + `[Error: ${result.error}]\n`);
     } catch (err: any) {
@@ -117,6 +120,7 @@ export function App() {
         models={models}
         selectedId={selectedId}
         runningModelId={runningModelId}
+        runningModelIds={runningModelIds}
         onSelect={setSelectedId}
         onDelete={handleDeleteModel}
       />
@@ -172,13 +176,23 @@ export function App() {
             </Stack>
 
             {/* Model metadata chips */}
-            <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-              <Chip label={selectedModel.format.toUpperCase()} size="small" variant="outlined" />
-              <Chip label={`ctx: ${selectedModel.contextSize}`} size="small" variant="outlined" />
-              <Chip label={`GPU layers: ${selectedModel.gpuLayers}`} size="small" variant="outlined" />
-              <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                {selectedModel.filePath}
-              </Typography>
+            <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
+              {selectedModel.remote ? (
+                <>
+                  <Chip label="REMOTE" size="small" color="info" variant="outlined" />
+                  <Chip label={`${selectedModel.host}:${selectedModel.port}`} size="small" variant="outlined" />
+                </>
+              ) : (
+                <>
+                  <Chip label={selectedModel.format.toUpperCase()} size="small" variant="outlined" />
+                  <Chip label={`ctx: ${selectedModel.contextSize}`} size="small" variant="outlined" />
+                  <Chip label={`GPU layers: ${selectedModel.gpuLayers}`} size="small" variant="outlined" />
+                  <Chip label={`port: ${selectedModel.port}`} size="small" variant="outlined" />
+                  <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                    {selectedModel.filePath}
+                  </Typography>
+                </>
+              )}
             </Stack>
 
             {/* Terminal output */}

@@ -2,7 +2,7 @@ import { ModelEntry, AppConfig } from './types';
 
 const BASE = '';
 
-export async function fetchModels(): Promise<{ models: ModelEntry[]; runningModelId: string | null }> {
+export async function fetchModels(): Promise<{ models: ModelEntry[]; runningModelId: string | null; runningModelIds: string[] }> {
   const res = await fetch(`${BASE}/api/models`);
   return res.json();
 }
@@ -25,15 +25,19 @@ export async function startModel(id: string): Promise<any> {
   return res.json();
 }
 
-export async function stopModel(): Promise<void> {
-  await fetch(`${BASE}/api/models/stop`, { method: 'POST' });
+export async function stopModel(id?: string): Promise<void> {
+  if (id) {
+    await fetch(`${BASE}/api/models/${id}/stop`, { method: 'POST' });
+  } else {
+    await fetch(`${BASE}/api/models/stop`, { method: 'POST' });
+  }
 }
 
-export async function sendChat(prompt: string): Promise<any> {
+export async function sendChat(prompt: string, modelId?: string): Promise<any> {
   const res = await fetch(`${BASE}/api/models/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, modelId }),
   });
   return res.json();
 }
