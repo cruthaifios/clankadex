@@ -124,7 +124,7 @@ export function App() {
         {/* Header */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
           <Stack direction="row">
-            <img src="Clankadex-small" />
+            <img src="/img/Clankadex-small.png" style={{ height: 32, marginRight: 8 }} />
             <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
               Clankadex
             </Typography>

@@ -13,6 +13,9 @@ export async function startServer(port: number): Promise<http.Server> {
   // Serve renderer
   app.use(express.static(path.join(__dirname, '..', 'renderer')));
 
+  // Serve images
+  app.use('/img', express.static(path.join(__dirname, '..', '..', 'img')));
+
   // API routes
   app.use('/api/models', modelRouter);
   app.use('/api/config', configRouter);

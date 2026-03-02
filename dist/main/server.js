@@ -49,6 +49,8 @@ async function startServer(port) {
     app.use(express_1.default.json());
     // Serve renderer
     app.use(express_1.default.static(path.join(__dirname, '..', 'renderer')));
+    // Serve images
+    app.use('/img', express_1.default.static(path.join(__dirname, '..', '..', 'img')));
     // API routes
     app.use('/api/models', models_1.modelRouter);
     app.use('/api/config', config_1.configRouter);
