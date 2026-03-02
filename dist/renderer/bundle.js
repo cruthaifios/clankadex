@@ -47048,7 +47048,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         styleOverrides: {
           root: {
             "& .MuiOutlinedInput-root": {
-              backgroundColor: "#1c2116"
+              backgroundColor: "#16211B"
             }
           }
         }

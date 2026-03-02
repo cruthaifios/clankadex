@@ -8,7 +8,8 @@
     "build:renderer": "tsc -p tsconfig.renderer.json && node esbuild.renderer.mjs",
     "build": "npm run build:main && npm run build:renderer",
     "dev": "npm run build && electron . --no-sandbox",
-    "start": "electron . --no-sandbox"
+    "start": "electron . --no-sandbox",
+    "web": "npm run build && node dist/main/web.js"
   },
   "keywords": [
     "ai",

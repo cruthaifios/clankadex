@@ -28,7 +28,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            backgroundColor: '#1c2116',
+            backgroundColor: '#16211B',
           },
         },
       },
