@@ -123,9 +123,12 @@ export function App() {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden' }}>
         {/* Header */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            🤖 Clankadex
-          </Typography>
+          <Stack direction="row">
+            <img src="Clankadex-small" />
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Clankadex
+            </Typography>
+          </Stack>
           <Stack direction="row" spacing={1}>
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowAddDialog(true)}>
               Add Model

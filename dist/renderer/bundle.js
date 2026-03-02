@@ -47023,8 +47023,8 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
   var theme = createTheme2({
     palette: {
       mode: "dark",
-      primary: { main: "#00ff88" },
-      secondary: { main: "#ff4444" },
+      primary: { main: "#ECDC51" },
+      secondary: { main: "#DBD06D" },
       background: {
         default: "#1a1a2e",
         paper: "#1e1e3a"
@@ -47048,7 +47048,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         styleOverrides: {
           root: {
             "& .MuiOutlinedInput-root": {
-              backgroundColor: "#0d0d1a"
+              backgroundColor: "#1c2116"
             }
           }
         }
@@ -47389,7 +47389,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         onSelect: setSelectedId,
         onDelete: handleDeleteModel
       }
-    ), /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { flex: 1, display: "flex", flexDirection: "column", p: 2, overflow: "hidden" } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1.5 } }, /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "h5", sx: { fontWeight: "bold", color: "primary.main" } }, "\u{1F99E} Clankadex"), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react13.default.createElement(Add_default, null), onClick: () => setShowAddDialog(true) }, "Add Model"), /* @__PURE__ */ import_react13.default.createElement(
+    ), /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { flex: 1, display: "flex", flexDirection: "column", p: 2, overflow: "hidden" } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1.5 } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row" }, /* @__PURE__ */ import_react13.default.createElement("img", { src: "Clankadex-small" }), /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "h5", sx: { fontWeight: "bold", color: "primary.main" } }, "Clankadex")), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react13.default.createElement(Add_default, null), onClick: () => setShowAddDialog(true) }, "Add Model"), /* @__PURE__ */ import_react13.default.createElement(
       Button_default,
       {
         variant: "outlined",
