@@ -98,12 +98,21 @@ export function App() {
             setSelectedId(null);
         loadModels();
     };
-    if (showSettings && config) {
-        return (_jsx(SettingsPanel, { config: config, onSave: async (c) => {
-                const updated = await api.updateConfig(c);
-                setConfig(updated);
-                setShowSettings(false);
-            }, onClose: () => setShowSettings(false) }));
+    if (showSettings) {
+        if (selectedModel?.remote) {
+            return (_jsx(SettingsPanel, { mode: "remote", model: selectedModel, onSave: async (data) => {
+                    await api.updateModel(selectedModel.id, data);
+                    loadModels();
+                    setShowSettings(false);
+                }, onClose: () => setShowSettings(false) }));
+        }
+        if (config) {
+            return (_jsx(SettingsPanel, { mode: "global", config: config, onSave: async (c) => {
+                    const updated = await api.updateConfig(c);
+                    setConfig(updated);
+                    setShowSettings(false);
+                }, onClose: () => setShowSettings(false) }));
+        }
     }
     return (_jsxs(Box, { sx: { display: 'flex', height: '100vh' }, children: [_jsx(Sidebar, { models: models, selectedId: selectedId, runningModelId: runningModelId, runningModelIds: runningModelIds, onSelect: setSelectedId, onDelete: handleDeleteModel }), _jsxs(Box, { sx: { flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden' }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1.5 }, children: [_jsxs(Stack, { direction: "row", children: [_jsx("img", { src: "/img/Clankadex-small.png", style: { height: 32, marginRight: 8 } }), _jsx(Typography, { variant: "h5", sx: { fontWeight: 'bold', color: 'primary.main' }, children: "Clankadex" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { variant: "contained", startIcon: _jsx(AddIcon, {}), onClick: () => setShowAddDialog(true), children: "Add Model" }), _jsx(Button, { variant: "outlined", startIcon: _jsx(SettingsIcon, {}), onClick: () => setShowSettings(true), sx: { borderColor: '#555', color: 'text.primary', '&:hover': { borderColor: '#888' } }, children: "Settings" })] })] }), !selectedModel ? (_jsx(Box, { sx: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }, children: _jsx(Typography, { color: "text.secondary", variant: "h6", children: "\u2190 Select a model from the sidebar" }) })) : (_jsxs(_Fragment, { children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Box, { sx: {
                                                     width: 12, height: 12, borderRadius: '50%',

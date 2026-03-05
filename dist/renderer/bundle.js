@@ -48009,6 +48009,14 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
     });
     return res.json();
   }
+  async function updateModel(id, data) {
+    const res = await fetch(`${BASE}/api/models/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  }
   async function deleteModel(id) {
     await fetch(`${BASE}/api/models/${id}`, { method: "DELETE" });
   }
@@ -48156,7 +48164,64 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
 
   // src/renderer/components/SettingsPanel.tsx
   var import_react12 = __toESM(require_react());
-  function SettingsPanel({ config, onSave, onClose }) {
+  function SettingsPanel(props) {
+    if (props.mode === "remote") {
+      return /* @__PURE__ */ import_react12.default.createElement(RemoteModelSettings, { model: props.model, onSave: props.onSave, onClose: props.onClose });
+    }
+    return /* @__PURE__ */ import_react12.default.createElement(GlobalSettings, { config: props.config, onSave: props.onSave, onClose: props.onClose });
+  }
+  function RemoteModelSettings({ model, onSave, onClose }) {
+    const [name, setName] = (0, import_react12.useState)(model.name);
+    const [host, setHost] = (0, import_react12.useState)(model.host);
+    const [port, setPort] = (0, import_react12.useState)(model.port);
+    const [notes, setNotes] = (0, import_react12.useState)(model.notes);
+    return /* @__PURE__ */ import_react12.default.createElement(Box_default, { sx: { height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ import_react12.default.createElement(Paper_default, { sx: { p: 4, width: 500, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" } }, /* @__PURE__ */ import_react12.default.createElement(Typography_default, { variant: "h5", sx: { color: "primary.main", mb: 1 } }, "\u2699 Remote Model Settings"), /* @__PURE__ */ import_react12.default.createElement(Typography_default, { variant: "body2", color: "text.secondary", sx: { mb: 3 } }, 'Configure connection for "', model.name, '"'), /* @__PURE__ */ import_react12.default.createElement(Stack_default, { spacing: 2.5 }, /* @__PURE__ */ import_react12.default.createElement(
+      TextField_default,
+      {
+        label: "Name",
+        value: name,
+        onChange: (e) => setName(e.target.value),
+        placeholder: "e.g. Remote Llama 70B"
+      }
+    ), /* @__PURE__ */ import_react12.default.createElement(Stack_default, { direction: "row", spacing: 2 }, /* @__PURE__ */ import_react12.default.createElement(
+      TextField_default,
+      {
+        label: "Host",
+        value: host,
+        onChange: (e) => setHost(e.target.value),
+        placeholder: "192.168.1.100",
+        sx: { flex: 1 }
+      }
+    ), /* @__PURE__ */ import_react12.default.createElement(
+      TextField_default,
+      {
+        label: "Port",
+        type: "number",
+        value: port,
+        onChange: (e) => setPort(Number(e.target.value)),
+        sx: { width: 120 }
+      }
+    )), /* @__PURE__ */ import_react12.default.createElement(
+      TextField_default,
+      {
+        label: "Description / Notes",
+        multiline: true,
+        rows: 3,
+        value: notes,
+        onChange: (e) => setNotes(e.target.value),
+        placeholder: "Optional notes about this remote server..."
+      }
+    )), /* @__PURE__ */ import_react12.default.createElement(Stack_default, { direction: "row", justifyContent: "flex-end", spacing: 1, sx: { mt: 3 } }, /* @__PURE__ */ import_react12.default.createElement(Button_default, { onClick: onClose, sx: { color: "text.secondary" } }, "Cancel"), /* @__PURE__ */ import_react12.default.createElement(
+      Button_default,
+      {
+        variant: "contained",
+        disabled: !name.trim() || !host.trim() || !port,
+        onClick: () => onSave({ name: name.trim(), host: host.trim(), port, notes })
+      },
+      "Save"
+    ))));
+  }
+  function GlobalSettings({ config, onSave, onClose }) {
     const [llamaCppPath, setLlamaCppPath] = (0, import_react12.useState)(config.llamaCppPath);
     const [defaultContextSize, setDefaultContextSize] = (0, import_react12.useState)(config.defaultContextSize);
     const [defaultGpuLayers, setDefaultGpuLayers] = (0, import_react12.useState)(config.defaultGpuLayers);
@@ -48188,7 +48253,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
     ), /* @__PURE__ */ import_react12.default.createElement(Typography_default, { variant: "caption", color: "text.secondary", sx: { mt: 0.5, display: "block" } }, "0 = CPU only. Increase for GPU offloading.")), /* @__PURE__ */ import_react12.default.createElement(
       TextField_default,
       {
-        label: "Model Server Port",
+        label: "Default Model Server Port",
         type: "number",
         value: serverPort,
         onChange: (e) => setServerPort(Number(e.target.value))
@@ -48300,19 +48365,37 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         setSelectedId(null);
       loadModels();
     };
-    if (showSettings && config) {
-      return /* @__PURE__ */ import_react13.default.createElement(
-        SettingsPanel,
-        {
-          config,
-          onSave: async (c) => {
-            const updated = await updateConfig(c);
-            setConfig(updated);
-            setShowSettings(false);
-          },
-          onClose: () => setShowSettings(false)
-        }
-      );
+    if (showSettings) {
+      if (selectedModel?.remote) {
+        return /* @__PURE__ */ import_react13.default.createElement(
+          SettingsPanel,
+          {
+            mode: "remote",
+            model: selectedModel,
+            onSave: async (data) => {
+              await updateModel(selectedModel.id, data);
+              loadModels();
+              setShowSettings(false);
+            },
+            onClose: () => setShowSettings(false)
+          }
+        );
+      }
+      if (config) {
+        return /* @__PURE__ */ import_react13.default.createElement(
+          SettingsPanel,
+          {
+            mode: "global",
+            config,
+            onSave: async (c) => {
+              const updated = await updateConfig(c);
+              setConfig(updated);
+              setShowSettings(false);
+            },
+            onClose: () => setShowSettings(false)
+          }
+        );
+      }
     }
     return /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { display: "flex", height: "100vh" } }, /* @__PURE__ */ import_react13.default.createElement(
       Sidebar,

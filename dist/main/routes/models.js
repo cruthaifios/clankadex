@@ -57,6 +57,22 @@ exports.modelRouter.post('/', (req, res) => {
     (0, store_1.saveModels)(models);
     res.json(entry);
 });
+// Update model
+exports.modelRouter.put('/:id', (req, res) => {
+    const models = (0, store_1.getModels)();
+    const idx = models.findIndex(m => m.id === req.params.id);
+    if (idx === -1) {
+        res.status(404).json({ error: 'Model not found' });
+        return;
+    }
+    const allowed = ['name', 'filePath', 'format', 'contextSize', 'gpuLayers', 'notes', 'host', 'port'];
+    for (const key of allowed) {
+        if (req.body[key] !== undefined)
+            models[idx][key] = req.body[key];
+    }
+    (0, store_1.saveModels)(models);
+    res.json(models[idx]);
+});
 // Delete model
 exports.modelRouter.delete('/:id', (req, res) => {
     // Stop if running

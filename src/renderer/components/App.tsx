@@ -100,18 +100,35 @@ export function App() {
     loadModels();
   };
 
-  if (showSettings && config) {
-    return (
-      <SettingsPanel
-        config={config}
-        onSave={async (c: Partial<AppConfig>) => {
-          const updated = await api.updateConfig(c);
-          setConfig(updated);
-          setShowSettings(false);
-        }}
-        onClose={() => setShowSettings(false)}
-      />
-    );
+  if (showSettings) {
+    if (selectedModel?.remote) {
+      return (
+        <SettingsPanel
+          mode="remote"
+          model={selectedModel}
+          onSave={async (data: Partial<ModelEntry>) => {
+            await api.updateModel(selectedModel.id, data);
+            loadModels();
+            setShowSettings(false);
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      );
+    }
+    if (config) {
+      return (
+        <SettingsPanel
+          mode="global"
+          config={config}
+          onSave={async (c: Partial<AppConfig>) => {
+            const updated = await api.updateConfig(c);
+            setConfig(updated);
+            setShowSettings(false);
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      );
+    }
   }
 
   return (

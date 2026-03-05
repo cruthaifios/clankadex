@@ -11,6 +11,14 @@ export async function addModel(data) {
     });
     return res.json();
 }
+export async function updateModel(id, data) {
+    const res = await fetch(`${BASE}/api/models/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return res.json();
+}
 export async function deleteModel(id) {
     await fetch(`${BASE}/api/models/${id}`, { method: 'DELETE' });
 }
