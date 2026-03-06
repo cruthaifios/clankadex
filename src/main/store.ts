@@ -27,6 +27,7 @@ export interface AppConfig {
   defaultContextSize: number;
   defaultGpuLayers: number;
   serverPort: number;
+  models: ModelEntry[];
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -34,6 +35,7 @@ const DEFAULT_CONFIG: AppConfig = {
   defaultContextSize: 2048,
   defaultGpuLayers: 0,
   serverPort: 8080,
+  models: [],
 };
 
 function readJson<T>(filename: string, fallback: T): T {
@@ -53,11 +55,14 @@ function writeJson(filename: string, data: unknown): void {
 }
 
 export function getModels(): ModelEntry[] {
-  return readJson('models.json', []);
+  const config = getConfig();
+  return config.models;
 }
 
 export function saveModels(models: ModelEntry[]): void {
-  writeJson('models.json', models);
+  const curConfig = getConfig();
+  curConfig.models = models
+  writeJson('config.json', models);
 }
 
 export function getConfig(): AppConfig {

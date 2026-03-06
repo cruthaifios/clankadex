@@ -4,18 +4,19 @@ import {
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CircleIcon from '@mui/icons-material/Circle';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { ModelEntry } from '../types';
 
 interface Props {
   models: ModelEntry[];
   selectedId: string | null;
-  runningModelId: string | null;
   runningModelIds?: string[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onEditModelSettings: (id: string) => void;
 }
 
-export function Sidebar({ models, selectedId, runningModelId, runningModelIds = [], onSelect, onDelete }: Props) {
+export function Sidebar({ models, selectedId, runningModelIds = [], onSelect, onDelete, onEditModelSettings }: Props) {
   return (
     <Box sx={{
       width: 280, bgcolor: '#16162a', borderRight: '1px solid', borderColor: 'divider',
@@ -61,13 +62,24 @@ export function Sidebar({ models, selectedId, runningModelId, runningModelIds = 
                 primaryTypographyProps={{ fontSize: 14 }}
                 secondaryTypographyProps={{ fontSize: 11 }}
               />
-              <IconButton
-                size="small"
-                onClick={(e) => { e.stopPropagation(); onDelete(m.id); }}
-                sx={{ color: 'grey.600', '&:hover': { color: 'secondary.main' } }}
-              >
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => { e.stopPropagation(); onEditModelSettings(m.id); }}
+                  sx={{ color: 'grey.600', '&:hover': { color: 'primary.main' } }}
+                  title="Edit model settings"
+                >
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={(e) => { e.stopPropagation(); onDelete(m.id); }}
+                  sx={{ color: 'grey.600', '&:hover': { color: 'secondary.main' } }}
+                  title="Delete model"
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </ListItemButton>
           ))
         )}

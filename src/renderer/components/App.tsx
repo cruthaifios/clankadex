@@ -11,16 +11,17 @@ import * as api from '../api';
 import { Sidebar } from './Sidebar';
 import { AddModelDialog } from './AddModelDialog';
 import { SettingsPanel } from './SettingsPanel';
+import { ModelSettingsDialog } from './ModelSettingsDialog';
 
 export function App() {
   const [models, setModels] = useState<ModelEntry[]>([]);
-  const [runningModelId, setRunningModelId] = useState<string | null>(null);
   const [runningModelIds, setRunningModelIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [terminalOutput, setTerminalOutput] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showModelSettingsDialog, setShowModelSettingsDialog] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -28,7 +29,6 @@ export function App() {
   const loadModels = useCallback(async () => {
     const data = await api.fetchModels();
     setModels(data.models);
-    setRunningModelId(data.runningModelId);
     setRunningModelIds(data.runningModelIds || []);
   }, []);
 
@@ -100,6 +100,26 @@ export function App() {
     loadModels();
   };
 
+  const handleEditModelSettings = (id: string) => {
+    setShowModelSettingsDialog(id);
+  };
+
+  const handleSaveModelSettings = async (settings: Partial<ModelEntry>) => {
+    if (!selectedModel) {
+      return;
+    }
+    // Update the specific model with settings
+    const updatedModel = { ...selectedModel, contextSize: settings.contextSize, gpuLayers: settings.gpuLayers };
+    const updatedModels = models.map((m: any) =>
+      m.id === showModelSettingsDialog ? updatedModel : m
+    );
+    // Save updated models back to JSON file
+    api.updateModel(updatedModel.id, updatedModel)
+    // Update local state
+    setModels(updatedModels);
+    setShowModelSettingsDialog(null);
+  };
+
   if (showSettings && config) {
     return (
       <SettingsPanel
@@ -119,10 +139,10 @@ export function App() {
       <Sidebar
         models={models}
         selectedId={selectedId}
-        runningModelId={runningModelId}
         runningModelIds={runningModelIds}
         onSelect={setSelectedId}
         onDelete={handleDeleteModel}
+        onEditModelSettings={handleEditModelSettings}
       />
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden' }}>
         {/* Header */}
@@ -233,6 +253,17 @@ export function App() {
           defaultGpuLayers={config?.defaultGpuLayers || 0}
           onAdd={handleAddModel}
           onClose={() => setShowAddDialog(false)}
+        />
+      )}
+
+      {showModelSettingsDialog && selectedModel && (
+        <ModelSettingsDialog
+          modelId={showModelSettingsDialog}
+          model={selectedModel}
+          defaultContextSize={config?.defaultContextSize || 2048}
+          defaultGpuLayers={config?.defaultGpuLayers || 0}
+          onSave={handleSaveModelSettings}
+          onClose={() => setShowModelSettingsDialog(null)}
         />
       )}
     </Box>
