@@ -2,7 +2,8 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Box, Typography, List, ListItemButton, ListItemText, ListItemIcon, IconButton, } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CircleIcon from '@mui/icons-material/Circle';
-export function Sidebar({ models, selectedId, runningModelId, runningModelIds = [], onSelect, onDelete }) {
+import SettingsIcon from '@mui/icons-material/Settings';
+export function Sidebar({ models, selectedId, runningModelIds = [], onSelect, onDelete, onEditModelSettings }) {
     return (_jsxs(Box, { sx: {
             width: 280, bgcolor: '#16162a', borderRight: '1px solid', borderColor: 'divider',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -16,5 +17,5 @@ export function Sidebar({ models, selectedId, runningModelId, runningModelIds = 
                     }, children: [_jsx(ListItemIcon, { sx: { minWidth: 28 }, children: _jsx(CircleIcon, { sx: {
                                     fontSize: 10,
                                     color: runningModelIds.includes(m.id) ? 'primary.main' : 'grey.700',
-                                } }) }), _jsx(ListItemText, { primary: m.name, secondary: m.remote ? `REMOTE · ${m.host}:${m.port}` : m.format.toUpperCase(), primaryTypographyProps: { fontSize: 14 }, secondaryTypographyProps: { fontSize: 11 } }), _jsx(IconButton, { size: "small", onClick: (e) => { e.stopPropagation(); onDelete(m.id); }, sx: { color: 'grey.600', '&:hover': { color: 'secondary.main' } }, children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) })] }, m.id)))) })] }));
+                                } }) }), _jsx(ListItemText, { primary: m.name, secondary: m.remote ? `REMOTE · ${m.host}:${m.port}` : m.format.toUpperCase(), primaryTypographyProps: { fontSize: 14 }, secondaryTypographyProps: { fontSize: 11 } }), _jsxs(Box, { sx: { display: 'flex', gap: 0.5 }, children: [_jsx(IconButton, { size: "small", onClick: (e) => { e.stopPropagation(); onEditModelSettings(m.id); }, sx: { color: 'grey.600', '&:hover': { color: 'primary.main' } }, title: "Edit model settings", children: _jsx(SettingsIcon, { fontSize: "small" }) }), _jsx(IconButton, { size: "small", onClick: (e) => { e.stopPropagation(); onDelete(m.id); }, sx: { color: 'grey.600', '&:hover': { color: 'secondary.main' } }, title: "Delete model", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) })] })] }, m.id)))) })] }));
 }

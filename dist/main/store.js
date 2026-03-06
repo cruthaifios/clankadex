@@ -49,6 +49,7 @@ const DEFAULT_CONFIG = {
     defaultContextSize: 2048,
     defaultGpuLayers: 0,
     serverPort: 8080,
+    models: [],
 };
 function readJson(filename, fallback) {
     ensureDataDir();
@@ -67,10 +68,13 @@ function writeJson(filename, data) {
     fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));
 }
 function getModels() {
-    return readJson('models.json', []);
+    const config = getConfig();
+    return config.models;
 }
 function saveModels(models) {
-    writeJson('models.json', models);
+    const curConfig = getConfig();
+    curConfig.models = models;
+    writeJson('config.json', models);
 }
 function getConfig() {
     return { ...DEFAULT_CONFIG, ...readJson('config.json', {}) };

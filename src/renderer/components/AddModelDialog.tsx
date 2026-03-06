@@ -55,10 +55,6 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
             <>
               <TextField label="File Path *" value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="/path/to/model.gguf" />
               <TextField label="Format" value={format} onChange={e => setFormat(e.target.value)} placeholder="gguf" />
-              <Stack direction="row" spacing={2}>
-                <TextField label="Context Size" type="number" value={contextSize} onChange={e => setContextSize(Number(e.target.value))} />
-                <TextField label="GPU Layers" type="number" value={gpuLayers} onChange={e => setGpuLayers(Number(e.target.value))} />
-              </Stack>
               <TextField label="Port" type="number" value={port} onChange={e => setPort(Number(e.target.value))} helperText="llama-server port for this model (default 8080)" sx={{ width: 160 }} />
             </>
           )}

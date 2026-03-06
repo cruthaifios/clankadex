@@ -5,6 +5,7 @@ const server_1 = require("./server");
 let mainWindow = null;
 const SERVER_PORT = 19321;
 function createWindow() {
+    electron_1.Menu.setApplicationMenu(null);
     mainWindow = new electron_1.BrowserWindow({
         width: 1200,
         height: 800,

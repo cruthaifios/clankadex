@@ -1089,7 +1089,7 @@
             }
             return dispatcher.useContext(Context);
           }
-          function useState17(initialState) {
+          function useState18(initialState) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useState(initialState);
           }
@@ -1101,7 +1101,7 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useRef(initialValue);
           }
-          function useEffect17(create, deps) {
+          function useEffect18(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useEffect(create, deps);
           }
@@ -1884,7 +1884,7 @@
           exports.useContext = useContext16;
           exports.useDebugValue = useDebugValue3;
           exports.useDeferredValue = useDeferredValue;
-          exports.useEffect = useEffect17;
+          exports.useEffect = useEffect18;
           exports.useId = useId2;
           exports.useImperativeHandle = useImperativeHandle6;
           exports.useInsertionEffect = useInsertionEffect3;
@@ -1892,7 +1892,7 @@
           exports.useMemo = useMemo11;
           exports.useReducer = useReducer;
           exports.useRef = useRef25;
-          exports.useState = useState17;
+          exports.useState = useState18;
           exports.useSyncExternalStore = useSyncExternalStore;
           exports.useTransition = useTransition;
           exports.version = ReactVersion;
@@ -2388,9 +2388,9 @@
           if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
             __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
           }
-          var React92 = require_react();
+          var React93 = require_react();
           var Scheduler = require_scheduler();
-          var ReactSharedInternals = React92.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React93.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           var suppressWarning = false;
           function setSuppressWarning(newSuppressWarning) {
             {
@@ -3995,7 +3995,7 @@
             {
               if (props.value == null) {
                 if (typeof props.children === "object" && props.children !== null) {
-                  React92.Children.forEach(props.children, function(child) {
+                  React93.Children.forEach(props.children, function(child) {
                     if (child == null) {
                       return;
                     }
@@ -24596,7 +24596,7 @@
       if (true) {
         (function() {
           "use strict";
-          var React92 = require_react();
+          var React93 = require_react();
           var REACT_ELEMENT_TYPE = Symbol.for("react.element");
           var REACT_PORTAL_TYPE = Symbol.for("react.portal");
           var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -24622,7 +24622,7 @@
             }
             return null;
           }
-          var ReactSharedInternals = React92.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React93.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           function error(format) {
             {
               {
@@ -25600,7 +25600,7 @@
   });
 
   // src/renderer/index.tsx
-  var import_react14 = __toESM(require_react());
+  var import_react15 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // node_modules/@mui/material/esm/colors/common.js
@@ -47969,7 +47969,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
   });
 
   // src/renderer/components/App.tsx
-  var import_react13 = __toESM(require_react());
+  var import_react14 = __toESM(require_react());
 
   // node_modules/@mui/icons-material/esm/PlayArrow.js
   var import_jsx_runtime69 = __toESM(require_jsx_runtime(), 1);
@@ -48011,6 +48011,14 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
   }
   async function deleteModel(id) {
     await fetch(`${BASE}/api/models/${id}`, { method: "DELETE" });
+  }
+  async function updateModel(id, data) {
+    const res = await fetch(`${BASE}/api/models/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return res.json();
   }
   async function startModel(id) {
     const res = await fetch(`${BASE}/api/models/${id}/start`, { method: "POST" });
@@ -48060,7 +48068,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
   }), "Circle");
 
   // src/renderer/components/Sidebar.tsx
-  function Sidebar({ models, selectedId, runningModelId, runningModelIds = [], onSelect, onDelete }) {
+  function Sidebar({ models, selectedId, runningModelIds = [], onSelect, onDelete, onEditModelSettings }) {
     return /* @__PURE__ */ import_react10.default.createElement(Box_default, { sx: {
       width: 280,
       bgcolor: "#16162a",
@@ -48098,7 +48106,19 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
           secondaryTypographyProps: { fontSize: 11 }
         }
       ),
-      /* @__PURE__ */ import_react10.default.createElement(
+      /* @__PURE__ */ import_react10.default.createElement(Box_default, { sx: { display: "flex", gap: 0.5 } }, /* @__PURE__ */ import_react10.default.createElement(
+        IconButton_default,
+        {
+          size: "small",
+          onClick: (e) => {
+            e.stopPropagation();
+            onEditModelSettings(m.id);
+          },
+          sx: { color: "grey.600", "&:hover": { color: "primary.main" } },
+          title: "Edit model settings"
+        },
+        /* @__PURE__ */ import_react10.default.createElement(Settings_default, { fontSize: "small" })
+      ), /* @__PURE__ */ import_react10.default.createElement(
         IconButton_default,
         {
           size: "small",
@@ -48106,10 +48126,11 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
             e.stopPropagation();
             onDelete(m.id);
           },
-          sx: { color: "grey.600", "&:hover": { color: "secondary.main" } }
+          sx: { color: "grey.600", "&:hover": { color: "secondary.main" } },
+          title: "Delete model"
         },
         /* @__PURE__ */ import_react10.default.createElement(DeleteOutline_default, { fontSize: "small" })
-      )
+      ))
     ))));
   }
 
@@ -48141,7 +48162,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         control: /* @__PURE__ */ import_react11.default.createElement(Checkbox_default, { checked: remote, onChange: (e) => setRemote(e.target.checked) }),
         label: "Remote Model"
       }
-    ), remote ? /* @__PURE__ */ import_react11.default.createElement(Stack_default, { direction: "row", spacing: 2 }, /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Host *", value: host, onChange: (e) => setHost(e.target.value), placeholder: "192.168.1.100", sx: { flex: 1 } }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Port *", type: "number", value: port, onChange: (e) => setPort(Number(e.target.value)), sx: { width: 120 } })) : /* @__PURE__ */ import_react11.default.createElement(import_react11.default.Fragment, null, /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "File Path *", value: filePath, onChange: (e) => setFilePath(e.target.value), placeholder: "/path/to/model.gguf" }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Format", value: format, onChange: (e) => setFormat(e.target.value), placeholder: "gguf" }), /* @__PURE__ */ import_react11.default.createElement(Stack_default, { direction: "row", spacing: 2 }, /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Context Size", type: "number", value: contextSize, onChange: (e) => setContextSize(Number(e.target.value)) }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "GPU Layers", type: "number", value: gpuLayers, onChange: (e) => setGpuLayers(Number(e.target.value)) })), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Port", type: "number", value: port, onChange: (e) => setPort(Number(e.target.value)), helperText: "llama-server port for this model (default 8080)", sx: { width: 160 } })), /* @__PURE__ */ import_react11.default.createElement(
+    ), remote ? /* @__PURE__ */ import_react11.default.createElement(Stack_default, { direction: "row", spacing: 2 }, /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Host *", value: host, onChange: (e) => setHost(e.target.value), placeholder: "192.168.1.100", sx: { flex: 1 } }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Port *", type: "number", value: port, onChange: (e) => setPort(Number(e.target.value)), sx: { width: 120 } })) : /* @__PURE__ */ import_react11.default.createElement(import_react11.default.Fragment, null, /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "File Path *", value: filePath, onChange: (e) => setFilePath(e.target.value), placeholder: "/path/to/model.gguf" }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Format", value: format, onChange: (e) => setFormat(e.target.value), placeholder: "gguf" }), /* @__PURE__ */ import_react11.default.createElement(TextField_default, { label: "Port", type: "number", value: port, onChange: (e) => setPort(Number(e.target.value)), helperText: "llama-server port for this model (default 8080)", sx: { width: 160 } })), /* @__PURE__ */ import_react11.default.createElement(
       TextField_default,
       {
         label: "Notes",
@@ -48203,32 +48224,69 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
     ))));
   }
 
+  // src/renderer/components/ModelSettingsDialog.tsx
+  var import_react13 = __toESM(require_react());
+  function ModelSettingsDialog({ modelId, model, defaultContextSize, defaultGpuLayers, onSave, onClose }) {
+    const [contextSize, setContextSize] = (0, import_react13.useState)(defaultContextSize);
+    const [gpuLayers, setGpuLayers] = (0, import_react13.useState)(defaultGpuLayers);
+    (0, import_react13.useEffect)(() => {
+      setContextSize(model.contextSize || defaultContextSize);
+      setGpuLayers(model.gpuLayers || defaultGpuLayers);
+    }, [modelId, defaultContextSize, defaultGpuLayers]);
+    const handleSubmit = async () => {
+      onSave({ ...model, contextSize, gpuLayers });
+    };
+    return /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ import_react13.default.createElement(Paper_default, { sx: { p: 4, width: 450, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" } }, /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "h6", sx: { color: "primary.main", mb: 3 } }, "\u2699 Model Settings"), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { spacing: 2.5 }, /* @__PURE__ */ import_react13.default.createElement(
+      TextField_default,
+      {
+        label: "Context Size",
+        type: "number",
+        value: contextSize,
+        onChange: (e) => setContextSize(Number(e.target.value))
+      }
+    ), /* @__PURE__ */ import_react13.default.createElement(Box_default, null, /* @__PURE__ */ import_react13.default.createElement(
+      TextField_default,
+      {
+        label: "GPU Layers",
+        type: "number",
+        value: gpuLayers,
+        onChange: (e) => setGpuLayers(Number(e.target.value))
+      }
+    ), /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "caption", color: "text.secondary", sx: { mt: 0.5, display: "block" } }, "0 = CPU only. Increase for GPU offloading."))), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", justifyContent: "flex-end", spacing: 1, sx: { mt: 3 } }, /* @__PURE__ */ import_react13.default.createElement(Button_default, { onClick: onClose, sx: { color: "text.secondary" } }, "Cancel"), /* @__PURE__ */ import_react13.default.createElement(
+      Button_default,
+      {
+        variant: "contained",
+        onClick: handleSubmit
+      },
+      "Save"
+    ))));
+  }
+
   // src/renderer/components/App.tsx
   function App() {
-    const [models, setModels] = (0, import_react13.useState)([]);
-    const [runningModelId, setRunningModelId] = (0, import_react13.useState)(null);
-    const [runningModelIds, setRunningModelIds] = (0, import_react13.useState)([]);
-    const [selectedId, setSelectedId] = (0, import_react13.useState)(null);
-    const [terminalOutput, setTerminalOutput] = (0, import_react13.useState)("");
-    const [chatInput, setChatInput] = (0, import_react13.useState)("");
-    const [showAddDialog, setShowAddDialog] = (0, import_react13.useState)(false);
-    const [showSettings, setShowSettings] = (0, import_react13.useState)(false);
-    const [config, setConfig] = (0, import_react13.useState)(null);
-    const terminalRef = (0, import_react13.useRef)(null);
-    const wsRef = (0, import_react13.useRef)(null);
-    const loadModels = (0, import_react13.useCallback)(async () => {
+    const [models, setModels] = (0, import_react14.useState)([]);
+    const [runningModelIds, setRunningModelIds] = (0, import_react14.useState)([]);
+    const [selectedId, setSelectedId] = (0, import_react14.useState)(null);
+    const [terminalOutput, setTerminalOutput] = (0, import_react14.useState)("");
+    const [chatInput, setChatInput] = (0, import_react14.useState)("");
+    const [showAddDialog, setShowAddDialog] = (0, import_react14.useState)(false);
+    const [showSettings, setShowSettings] = (0, import_react14.useState)(false);
+    const [showModelSettingsDialog, setShowModelSettingsDialog] = (0, import_react14.useState)(null);
+    const [config, setConfig] = (0, import_react14.useState)(null);
+    const terminalRef = (0, import_react14.useRef)(null);
+    const wsRef = (0, import_react14.useRef)(null);
+    const loadModels = (0, import_react14.useCallback)(async () => {
       const data = await fetchModels();
       setModels(data.models);
-      setRunningModelId(data.runningModelId);
       setRunningModelIds(data.runningModelIds || []);
     }, []);
-    (0, import_react13.useEffect)(() => {
+    (0, import_react14.useEffect)(() => {
       loadModels();
     }, [loadModels]);
-    (0, import_react13.useEffect)(() => {
+    (0, import_react14.useEffect)(() => {
       fetchConfig().then(setConfig);
     }, []);
-    (0, import_react13.useEffect)(() => {
+    (0, import_react14.useEffect)(() => {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
       const ws = new WebSocket(`${proto}//${window.location.host}/ws`);
       ws.onmessage = (ev) => {
@@ -48245,7 +48303,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
       wsRef.current = ws;
       return () => ws.close();
     }, [loadModels]);
-    (0, import_react13.useEffect)(() => {
+    (0, import_react14.useEffect)(() => {
       if (terminalRef.current)
         terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }, [terminalOutput]);
@@ -48300,8 +48358,23 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         setSelectedId(null);
       loadModels();
     };
+    const handleEditModelSettings = (id) => {
+      setShowModelSettingsDialog(id);
+    };
+    const handleSaveModelSettings = async (settings) => {
+      if (!selectedModel) {
+        return;
+      }
+      const updatedModel = { ...selectedModel, contextSize: settings.contextSize, gpuLayers: settings.gpuLayers };
+      const updatedModels = models.map(
+        (m) => m.id === showModelSettingsDialog ? updatedModel : m
+      );
+      updateModel(updatedModel.id, updatedModel);
+      setModels(updatedModels);
+      setShowModelSettingsDialog(null);
+    };
     if (showSettings && config) {
-      return /* @__PURE__ */ import_react13.default.createElement(
+      return /* @__PURE__ */ import_react14.default.createElement(
         SettingsPanel,
         {
           config,
@@ -48314,31 +48387,31 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         }
       );
     }
-    return /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { display: "flex", height: "100vh" } }, /* @__PURE__ */ import_react13.default.createElement(
+    return /* @__PURE__ */ import_react14.default.createElement(Box_default, { sx: { display: "flex", height: "100vh" } }, /* @__PURE__ */ import_react14.default.createElement(
       Sidebar,
       {
         models,
         selectedId,
-        runningModelId,
         runningModelIds,
         onSelect: setSelectedId,
-        onDelete: handleDeleteModel
+        onDelete: handleDeleteModel,
+        onEditModelSettings: handleEditModelSettings
       }
-    ), /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { flex: 1, display: "flex", flexDirection: "column", p: 2, overflow: "hidden" } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1.5 } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row" }, /* @__PURE__ */ import_react13.default.createElement("img", { src: "/img/Clankadex-small.png", style: { height: 32, marginRight: 8 } }), /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "h5", sx: { fontWeight: "bold", color: "primary.main" } }, "Clankadex")), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react13.default.createElement(Add_default, null), onClick: () => setShowAddDialog(true) }, "Add Model"), /* @__PURE__ */ import_react13.default.createElement(
+    ), /* @__PURE__ */ import_react14.default.createElement(Box_default, { sx: { flex: 1, display: "flex", flexDirection: "column", p: 2, overflow: "hidden" } }, /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1.5 } }, /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row" }, /* @__PURE__ */ import_react14.default.createElement("img", { src: "/img/Clankadex-small.png", style: { height: 32, marginRight: 8 } }), /* @__PURE__ */ import_react14.default.createElement(Typography_default, { variant: "h5", sx: { fontWeight: "bold", color: "primary.main" } }, "Clankadex")), /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react14.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react14.default.createElement(Add_default, null), onClick: () => setShowAddDialog(true) }, "Add Model"), /* @__PURE__ */ import_react14.default.createElement(
       Button_default,
       {
         variant: "outlined",
-        startIcon: /* @__PURE__ */ import_react13.default.createElement(Settings_default, null),
+        startIcon: /* @__PURE__ */ import_react14.default.createElement(Settings_default, null),
         onClick: () => setShowSettings(true),
         sx: { borderColor: "#555", color: "text.primary", "&:hover": { borderColor: "#888" } }
       },
       "Settings"
-    ))), !selectedModel ? /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ import_react13.default.createElement(Typography_default, { color: "text.secondary", variant: "h6" }, "\u2190 Select a model from the sidebar")) : /* @__PURE__ */ import_react13.default.createElement(import_react13.default.Fragment, null, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1 } }, /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", alignItems: "center", spacing: 1 }, /* @__PURE__ */ import_react13.default.createElement(Box_default, { sx: {
+    ))), !selectedModel ? /* @__PURE__ */ import_react14.default.createElement(Box_default, { sx: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ import_react14.default.createElement(Typography_default, { color: "text.secondary", variant: "h6" }, "\u2190 Select a model from the sidebar")) : /* @__PURE__ */ import_react14.default.createElement(import_react14.default.Fragment, null, /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1 } }, /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", alignItems: "center", spacing: 1 }, /* @__PURE__ */ import_react14.default.createElement(Box_default, { sx: {
       width: 12,
       height: 12,
       borderRadius: "50%",
       bgcolor: isRunning ? "primary.main" : "grey.700"
-    } }), /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "h6", sx: { fontWeight: "bold", color: "#fff" } }, selectedModel.name)), /* @__PURE__ */ import_react13.default.createElement(Box_default, null, !isRunning ? /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react13.default.createElement(PlayArrow_default, null), onClick: handleStart }, "Start") : /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", color: "secondary", startIcon: /* @__PURE__ */ import_react13.default.createElement(Stop_default, null), onClick: handleStop }, "Stop"))), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", spacing: 1, sx: { mb: 1.5, flexWrap: "wrap" } }, selectedModel.remote ? /* @__PURE__ */ import_react13.default.createElement(import_react13.default.Fragment, null, /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: "REMOTE", size: "small", color: "info", variant: "outlined" }), /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: `${selectedModel.host}:${selectedModel.port}`, size: "small", variant: "outlined" })) : /* @__PURE__ */ import_react13.default.createElement(import_react13.default.Fragment, null, /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: selectedModel.format.toUpperCase(), size: "small", variant: "outlined" }), /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: `ctx: ${selectedModel.contextSize}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: `GPU layers: ${selectedModel.gpuLayers}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react13.default.createElement(Chip_default, { label: `port: ${selectedModel.port}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react13.default.createElement(Typography_default, { variant: "caption", color: "text.secondary", sx: { alignSelf: "center" } }, selectedModel.filePath))), /* @__PURE__ */ import_react13.default.createElement(
+    } }), /* @__PURE__ */ import_react14.default.createElement(Typography_default, { variant: "h6", sx: { fontWeight: "bold", color: "#fff" } }, selectedModel.name)), /* @__PURE__ */ import_react14.default.createElement(Box_default, null, !isRunning ? /* @__PURE__ */ import_react14.default.createElement(Button_default, { variant: "contained", startIcon: /* @__PURE__ */ import_react14.default.createElement(PlayArrow_default, null), onClick: handleStart }, "Start") : /* @__PURE__ */ import_react14.default.createElement(Button_default, { variant: "contained", color: "secondary", startIcon: /* @__PURE__ */ import_react14.default.createElement(Stop_default, null), onClick: handleStop }, "Stop"))), /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", spacing: 1, sx: { mb: 1.5, flexWrap: "wrap" } }, selectedModel.remote ? /* @__PURE__ */ import_react14.default.createElement(import_react14.default.Fragment, null, /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: "REMOTE", size: "small", color: "info", variant: "outlined" }), /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: `${selectedModel.host}:${selectedModel.port}`, size: "small", variant: "outlined" })) : /* @__PURE__ */ import_react14.default.createElement(import_react14.default.Fragment, null, /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: selectedModel.format.toUpperCase(), size: "small", variant: "outlined" }), /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: `ctx: ${selectedModel.contextSize}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: `GPU layers: ${selectedModel.gpuLayers}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react14.default.createElement(Chip_default, { label: `port: ${selectedModel.port}`, size: "small", variant: "outlined" }), /* @__PURE__ */ import_react14.default.createElement(Typography_default, { variant: "caption", color: "text.secondary", sx: { alignSelf: "center" } }, selectedModel.filePath))), /* @__PURE__ */ import_react14.default.createElement(
       Paper_default,
       {
         ref: terminalRef,
@@ -48361,7 +48434,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         }
       },
       terminalOutput || (isRunning ? "Waiting for output..." : "Model not running. Click Start to begin.")
-    ), /* @__PURE__ */ import_react13.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react13.default.createElement(
+    ), /* @__PURE__ */ import_react14.default.createElement(Stack_default, { direction: "row", spacing: 1 }, /* @__PURE__ */ import_react14.default.createElement(
       TextField_default,
       {
         placeholder: isRunning ? "Type a message..." : "Start the model to chat",
@@ -48371,7 +48444,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         disabled: !isRunning,
         sx: { flex: 1 }
       }
-    ), /* @__PURE__ */ import_react13.default.createElement(Button_default, { variant: "contained", onClick: handleChat, disabled: !isRunning }, "Send")))), showAddDialog && /* @__PURE__ */ import_react13.default.createElement(
+    ), /* @__PURE__ */ import_react14.default.createElement(Button_default, { variant: "contained", onClick: handleChat, disabled: !isRunning }, "Send")))), showAddDialog && /* @__PURE__ */ import_react14.default.createElement(
       AddModelDialog,
       {
         defaultContextSize: config?.defaultContextSize || 2048,
@@ -48379,13 +48452,23 @@ To suppress this warning, you need to explicitly provide the \`palette.${key}Cha
         onAdd: handleAddModel,
         onClose: () => setShowAddDialog(false)
       }
+    ), showModelSettingsDialog && selectedModel && /* @__PURE__ */ import_react14.default.createElement(
+      ModelSettingsDialog,
+      {
+        modelId: showModelSettingsDialog,
+        model: selectedModel,
+        defaultContextSize: config?.defaultContextSize || 2048,
+        defaultGpuLayers: config?.defaultGpuLayers || 0,
+        onSave: handleSaveModelSettings,
+        onClose: () => setShowModelSettingsDialog(null)
+      }
     ));
   }
 
   // src/renderer/index.tsx
   var root = (0, import_client.createRoot)(document.getElementById("root"));
   root.render(
-    /* @__PURE__ */ import_react14.default.createElement(ThemeProvider4, { theme }, /* @__PURE__ */ import_react14.default.createElement(CssBaseline_default, null), /* @__PURE__ */ import_react14.default.createElement(App, null))
+    /* @__PURE__ */ import_react15.default.createElement(ThemeProvider4, { theme }, /* @__PURE__ */ import_react15.default.createElement(CssBaseline_default, null), /* @__PURE__ */ import_react15.default.createElement(App, null))
   );
 })();
 /*! Bundled license information:

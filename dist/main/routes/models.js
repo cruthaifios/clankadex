@@ -72,6 +72,48 @@ exports.modelRouter.delete('/:id', (req, res) => {
     (0, store_1.saveModels)(models);
     res.json({ ok: true });
 });
+// Update model
+exports.modelRouter.put('/:id', (req, res) => {
+    const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port } = req.body;
+    if (!name) {
+        res.status(400).json({ error: 'name is required' });
+        return;
+    }
+    if (!remote && !filePath) {
+        res.status(400).json({ error: 'filePath is required for local models' });
+        return;
+    }
+    if (remote && (!host || !port)) {
+        res.status(400).json({ error: 'host and port are required for remote models' });
+        return;
+    }
+    // Stop if running
+    const running = runningModels.get(req.params.id);
+    if (running) {
+        if (running.process)
+            running.process.kill('SIGTERM');
+        runningModels.delete(req.params.id);
+        broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
+    }
+    let models = (0, store_1.getModels)();
+    const entry = {
+        id: req.params.id,
+        name,
+        filePath: filePath || '',
+        format: format || 'gguf',
+        sizeBytes: null,
+        contextSize: contextSize || 2048,
+        gpuLayers: gpuLayers || 0,
+        notes: notes || '',
+        addedAt: new Date().toISOString(),
+        remote: !!remote,
+        host: host || '127.0.0.1',
+        port: port || 8080,
+    };
+    models = models.map(m => m.id == req.params.id ? entry : m);
+    (0, store_1.saveModels)(models);
+    res.json({ ok: true });
+});
 // Start model
 exports.modelRouter.post('/:id/start', async (req, res) => {
     const models = (0, store_1.getModels)();
@@ -114,7 +156,7 @@ exports.modelRouter.post('/:id/start', async (req, res) => {
         '--ctx-size', String(model.contextSize),
         '--n-gpu-layers', String(model.gpuLayers),
         '--port', String(serverPort),
-        '--host', '127.0.0.1',
+        '--host', '0.0.0.0',
     ];
     const proc = (0, child_process_1.spawn)(config.llamaCppPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
     let outputBuffer = '';
