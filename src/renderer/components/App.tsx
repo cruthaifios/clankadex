@@ -101,6 +101,7 @@ export function App() {
   };
 
   const handleEditModelSettings = (id: string) => {
+    setSelectedId(id);
     setShowModelSettingsDialog(id);
   };
 

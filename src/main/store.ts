@@ -62,7 +62,7 @@ export function getModels(): ModelEntry[] {
 export function saveModels(models: ModelEntry[]): void {
   const curConfig = getConfig();
   curConfig.models = models
-  writeJson('config.json', models);
+  writeJson('config.json', curConfig);
 }
 
 export function getConfig(): AppConfig {

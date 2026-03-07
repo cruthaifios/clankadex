@@ -20,7 +20,7 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
   const [host, setHost] = useState(model.host);
   const [port, setPort] = useState(model.port);
   const [notes, setNotes] = useState(model.notes);
-  const [remote, setRemote] = useState(model.remote);
+  const [filePath, setFilePath] = useState(model.filePath);
 
   useEffect(() => {
     setContextSize(model.contextSize || defaultContextSize);
@@ -44,6 +44,12 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Remote Llama 70B"
+          />
+          <TextField
+            label="File Path *"
+            value={filePath}
+            onChange={e => setFilePath(e.target.value)}
+            placeholder="/path/to/model.gguf"
           />
           <Stack direction="row" spacing={2}>
             <TextField
@@ -71,7 +77,7 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
           />
         </Stack>
 
-        {!remote && (
+        {!model.remote && (
           <Stack spacing={2.5}>
             <TextField
               label="Context Size"
