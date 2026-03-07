@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import * as path from 'path';
 import { startServer } from './server';
 
@@ -6,6 +6,8 @@ let mainWindow: BrowserWindow | null = null;
 const SERVER_PORT = 19321;
 
 function createWindow() {
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,

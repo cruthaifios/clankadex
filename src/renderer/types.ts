@@ -18,4 +18,5 @@ export interface AppConfig {
   defaultContextSize: number;
   defaultGpuLayers: number;
   serverPort: number;
+  models: ModelEntry[];
 }
