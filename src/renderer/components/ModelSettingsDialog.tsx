@@ -16,6 +16,11 @@ interface Props {
 export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaultGpuLayers, onSave, onClose }: Props) {
   const [contextSize, setContextSize] = useState(defaultContextSize);
   const [gpuLayers, setGpuLayers] = useState(defaultGpuLayers);
+  const [name, setName] = useState(model.name);
+  const [host, setHost] = useState(model.host);
+  const [port, setPort] = useState(model.port);
+  const [notes, setNotes] = useState(model.notes);
+  const [remote, setRemote] = useState(model.remote);
 
   useEffect(() => {
     setContextSize(model.contextSize || defaultContextSize);
@@ -23,7 +28,7 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
   }, [modelId, defaultContextSize, defaultGpuLayers]);
 
   const handleSubmit = async () => {
-    onSave({ ...model, contextSize, gpuLayers });
+    onSave({ ...model, contextSize, gpuLayers, name, host, port, notes });
   };
 
   return (
@@ -35,24 +40,59 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
 
         <Stack spacing={2.5}>
           <TextField
-            label="Context Size"
-            type="number"
-            value={contextSize}
-            onChange={e => setContextSize(Number(e.target.value))}
+            label="Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Remote Llama 70B"
           />
-
-          <Box>
+          <Stack direction="row" spacing={2}>
             <TextField
-              label="GPU Layers"
-              type="number"
-              value={gpuLayers}
-              onChange={e => setGpuLayers(Number(e.target.value))}
+              label="Host"
+              value={host}
+              onChange={e => setHost(e.target.value)}
+              placeholder="192.168.1.100"
+              sx={{ flex: 1 }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              0 = CPU only. Increase for GPU offloading.
-            </Typography>
-          </Box>
+            <TextField
+              label="Port"
+              type="number"
+              value={port}
+              onChange={e => setPort(Number(e.target.value))}
+              sx={{ width: 120 }}
+            />
+          </Stack>
+          <TextField
+            label="Description / Notes"
+            multiline
+            rows={3}
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Optional notes about this remote server..."
+          />
         </Stack>
+
+        {!remote && (
+          <Stack spacing={2.5}>
+            <TextField
+              label="Context Size"
+              type="number"
+              value={contextSize}
+              onChange={e => setContextSize(Number(e.target.value))}
+            />
+
+            <Box>
+              <TextField
+                label="GPU Layers"
+                type="number"
+                value={gpuLayers}
+                onChange={e => setGpuLayers(Number(e.target.value))}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                0 = CPU only. Increase for GPU offloading.
+              </Typography>
+            </Box>
+          </Stack>
+        )}
 
         <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 3 }}>
           <Button onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>

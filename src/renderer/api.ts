@@ -16,17 +16,17 @@ export async function addModel(data: Partial<ModelEntry>): Promise<ModelEntry> {
   return res.json();
 }
 
-export async function deleteModel(id: string): Promise<void> {
-  await fetch(`${BASE}/api/models/${id}`, { method: 'DELETE' });
-}
-
-export async function updateModel(id: string, data: Partial<ModelEntry>): Promise<void> {
+export async function updateModel(id: string, data: Partial<ModelEntry>): Promise<ModelEntry> {
   const res = await fetch(`${BASE}/api/models/${id}`, {
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   return res.json();
+}
+
+export async function deleteModel(id: string): Promise<void> {
+  await fetch(`${BASE}/api/models/${id}`, { method: 'DELETE' });
 }
 
 export async function startModel(id: string): Promise<any> {
