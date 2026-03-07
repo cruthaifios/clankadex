@@ -180,7 +180,7 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
     '--ctx-size', String(model.contextSize),
     '--n-gpu-layers', String(model.gpuLayers),
     '--port', String(serverPort),
-    '--host', '0.0.0.0',
+    '--host', model.host || '127.0.0.1',
   ];
 
   const proc = spawn(config.llamaCppPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
