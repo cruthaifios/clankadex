@@ -2,6 +2,7 @@
   "name": "clankadex",
   "version": "1.0.0",
   "description": "Local AI Model Library Manager",
+  "author": "Cruthaifios <cruthaifios@gmail.com>",
   "main": "dist/main/main.js",
   "scripts": {
     "build:main": "tsc -p tsconfig.main.json",
@@ -18,6 +19,39 @@
     "llama.cpp"
   ],
   "license": "MIT",
+  "build": {
+    "appId": "com.clankadex.app",
+    "productName": "Clankadex",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "font/**",
+      "img/**",
+      "package.json"
+    ],
+    "linux": {
+      "target": "deb",
+      "icon": "img/Clankadex.png",
+      "category": "Development",
+      "synopsis": "Local AI Model Library Manager",
+      "description": "Clankadex is a desktop app for managing and running local AI models with llama.cpp."
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "img/Clankadex.png",
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "img/Clankadex.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.0",
@@ -25,6 +59,7 @@
     "@types/react-dom": "^18.2.18",
     "@types/ws": "^8.5.10",
     "electron": "^28.2.0",
+    "electron-builder": "^24.13.3",
     "esbuild": "^0.19.12",
     "typescript": "^5.3.3"
   },
