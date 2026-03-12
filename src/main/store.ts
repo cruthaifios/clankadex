@@ -1,10 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+function getDataDir(): string {
+  try {
+    // In packaged Electron, app.asar is read-only — use the OS user data dir instead.
+    const { app } = require('electron');
+    return app.getPath('userData');
+  } catch {
+    // Fallback for web/Node mode (npm run web)
+    return path.join(__dirname, '..', '..', 'data');
+  }
+}
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const dir = getDataDir();
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 export interface ModelEntry {
@@ -40,7 +50,7 @@ const DEFAULT_CONFIG: AppConfig = {
 
 function readJson<T>(filename: string, fallback: T): T {
   ensureDataDir();
-  const fp = path.join(DATA_DIR, filename);
+  const fp = path.join(getDataDir(), filename);
   if (!fs.existsSync(fp)) return fallback;
   try {
     return JSON.parse(fs.readFileSync(fp, 'utf-8'));
@@ -51,7 +61,7 @@ function readJson<T>(filename: string, fallback: T): T {
 
 function writeJson(filename: string, data: unknown): void {
   ensureDataDir();
-  fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));
+  fs.writeFileSync(path.join(getDataDir(), filename), JSON.stringify(data, null, 2));
 }
 
 export function getModels(): ModelEntry[] {

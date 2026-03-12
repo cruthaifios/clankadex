@@ -1,6 +1,6 @@
 {
   "name": "clankadex",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local AI Model Library Manager",
   "author": "Cruthaifios <cruthaifios@gmail.com>",
   "main": "dist/main/main.js",
@@ -22,6 +22,7 @@
   "build": {
     "appId": "com.clankadex.app",
     "productName": "Clankadex",
+    "icon": "build/icon.png",
     "directories": {
       "output": "release"
     },
@@ -33,19 +34,17 @@
     ],
     "linux": {
       "target": "deb",
-      "icon": "img/Clankadex.png",
+      "icon": "build/icon.png",
       "category": "Development",
       "synopsis": "Local AI Model Library Manager",
       "description": "Clankadex is a desktop app for managing and running local AI models with llama.cpp."
     },
     "mac": {
       "target": "dmg",
-      "icon": "img/Clankadex.png",
       "category": "public.app-category.developer-tools"
     },
     "win": {
-      "target": "nsis",
-      "icon": "img/Clankadex.png"
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,
