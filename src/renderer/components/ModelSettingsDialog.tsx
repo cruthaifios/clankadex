@@ -3,6 +3,7 @@ import {
   Box, Typography, TextField, Button, Stack, Paper,
 } from '@mui/material';
 import { ModelEntry } from '../types';
+import { BrowseField } from './BrowseField'
 
 interface Props {
   modelId: string;
@@ -45,11 +46,12 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Remote Llama 70B"
           />
-          <TextField
+          <BrowseField
             label="File Path *"
+              placeholder="/path/to/model.gguf"
             value={filePath}
-            onChange={e => setFilePath(e.target.value)}
-            placeholder="/path/to/model.gguf"
+            onChange={val => setFilePath(val)}
+            browseType={"file"}
           />
           <Stack direction="row" spacing={2}>
             <TextField

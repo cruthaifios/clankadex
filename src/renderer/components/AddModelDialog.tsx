@@ -4,6 +4,7 @@ import {
   FormControlLabel, Checkbox,
 } from '@mui/material';
 import { ModelEntry } from '../types';
+import { BrowseField } from './BrowseField'; 
 
 interface Props {
   defaultContextSize: number;
@@ -26,6 +27,11 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
   const canSubmit = remote
     ? name.trim() && host.trim() && port > 0
     : name.trim() && filePath.trim();
+
+  const handleFileSelect = async () => {
+    const filePath = await (window as any).electronAPI?.browse();
+    if (filePath) setFilePath(filePath);
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -53,9 +59,15 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
             </Stack>
           ) : (
             <>
-              <TextField label="File Path *" value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="/path/to/model.gguf" />
-              <TextField label="Format" value={format} onChange={e => setFormat(e.target.value)} placeholder="gguf" />
+              <BrowseField
+                label="File Path *"
+                  placeholder="/path/to/model.gguf"
+                value={filePath}
+                onChange={val => setFilePath(val)}
+                browseType={"file"}
+              />
               <Stack direction="row" spacing={2}>
+                <TextField label="Format" value={format} onChange={e => setFormat(e.target.value)} placeholder="gguf" />
                 <TextField label="Context Size" type="number" value={contextSize} onChange={e => setContextSize(Number(e.target.value))} />
                 <TextField label="GPU Layers" type="number" value={gpuLayers} onChange={e => setGpuLayers(Number(e.target.value))} />
               </Stack>

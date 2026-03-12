@@ -3,6 +3,7 @@ import {
   Box, Typography, TextField, Button, Stack, Paper,
 } from '@mui/material';
 import { AppConfig, ModelEntry } from '../types';
+import { BrowseField } from './BrowseField';
 
 interface Props {
   config: AppConfig;
@@ -23,14 +24,15 @@ export function SettingsPanel({ config, onSave, onClose }: Props) {
 
         <Stack spacing={2.5}>
           <Box>
-            <TextField
+            <BrowseField
               label="llama.cpp Server Path"
-              value={llamaCppPath}
-              onChange={e => setLlamaCppPath(e.target.value)}
               placeholder="/usr/local/bin/llama-server"
+              value={llamaCppPath}
+              onChange={value => setLlamaCppPath(value)}
+              browseType={"file"}
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Path to llama-server or llama-cli binary
+              Path to llama-server
             </Typography>
           </Box>
 
