@@ -110,7 +110,7 @@ export function App() {
       return;
     }
     // Update the specific model with settings
-    const updatedModel = { ...selectedModel, contextSize: settings.contextSize, gpuLayers: settings.gpuLayers };
+    const updatedModel = { ...selectedModel, ...settings };
     const updatedModels = models.map((m: any) =>
       m.id === showModelSettingsDialog ? updatedModel : m
     );
