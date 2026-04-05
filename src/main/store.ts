@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-function getDataDir(): string {
+export function getDataDir(): string {
   try {
     // In packaged Electron, app.asar is read-only — use the OS user data dir instead.
     const { app } = require('electron');
@@ -12,7 +12,7 @@ function getDataDir(): string {
   }
 }
 
-function ensureDataDir() {
+export function ensureDataDir() {
   const dir = getDataDir();
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
@@ -38,6 +38,7 @@ export interface AppConfig {
   defaultGpuLayers: number;
   serverPort: number;
   models: ModelEntry[];
+  loggingEnabled: boolean;
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -46,6 +47,7 @@ const DEFAULT_CONFIG: AppConfig = {
   defaultGpuLayers: 0,
   serverPort: 8080,
   models: [],
+  loggingEnabled: false,
 };
 
 function readJson<T>(filename: string, fallback: T): T {

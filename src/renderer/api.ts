@@ -69,3 +69,33 @@ export async function checkPrerequisites(): Promise<Record<string, any>> {
   const res = await fetch(`${BASE}/api/prerequisites/check`);
   return res.json();
 }
+
+export async function fetchMetrics(): Promise<any[]> {
+  const res = await fetch(`${BASE}/api/metrics`);
+  return res.json();
+}
+
+export async function fetchMetricsForModel(modelName: string): Promise<any> {
+  const res = await fetch(`${BASE}/api/metrics/${modelName}`);
+  return res.json();
+}
+
+export async function fetchLogsForModel(modelName: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/api/metrics/${modelName}/logs`);
+  return res.json();
+}
+
+export async function fetchLogFiles(): Promise<string[]> {
+  const res = await fetch(`${BASE}/api/metrics/logs/files`);
+  return res.json();
+}
+
+export async function fetchLogFile(fileName: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/api/metrics/logs/${fileName}`);
+  return res.json();
+}
+
+export async function fetchMetricsFiles(): Promise<string[]> {
+  const res = await fetch(`${BASE}/api/metrics/metrics/files`);
+  return res.json();
+}

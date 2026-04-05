@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Box, Typography, TextField, Button, Stack, Paper,
+  Box, Typography, TextField, Button, Stack, Paper, FormControlLabel, Switch,
 } from '@mui/material';
 import { AppConfig, ModelEntry } from '../types';
 import { BrowseField } from './BrowseField';
@@ -16,6 +16,7 @@ export function SettingsPanel({ config, onSave, onClose }: Props) {
   const [defaultContextSize, setDefaultContextSize] = useState(config.defaultContextSize);
   const [defaultGpuLayers, setDefaultGpuLayers] = useState(config.defaultGpuLayers);
   const [serverPort, setServerPort] = useState(config.serverPort);
+  const [loggingEnabled, setLoggingEnabled] = useState(config.loggingEnabled || false);
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -61,13 +62,26 @@ export function SettingsPanel({ config, onSave, onClose }: Props) {
             value={serverPort}
             onChange={e => setServerPort(Number(e.target.value))}
           />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={loggingEnabled}
+                onChange={e => setLoggingEnabled(e.target.checked)}
+              />
+            }
+            label="Enable Logging"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
+            Log all chat requests/responses and track model metrics
+          </Typography>
         </Stack>
 
         <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 3 }}>
           <Button onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={() => onSave({ llamaCppPath, defaultContextSize, defaultGpuLayers, serverPort })}
+            onClick={() => onSave({ llamaCppPath, defaultContextSize, defaultGpuLayers, serverPort, loggingEnabled })}
           >
             Save
           </Button>

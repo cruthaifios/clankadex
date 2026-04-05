@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { ChildProcess, spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import { getModels, saveModels, getConfig, ModelEntry } from '../store';
+import { appendChatLog, updateMetrics } from '../logging';
 
 export const modelRouter = Router();
 
@@ -228,13 +229,50 @@ modelRouter.post('/chat', async (req: Request, res: Response) => {
   }
   if (!rm) { res.status(400).json({ error: 'No model running' }); return; }
 
+  const models = getModels();
+  const model = models.find(m => m.id === rm.modelId);
+  const modelName = model?.name || 'unknown';
+  const config = getConfig();
+  const loggingEnabled = config.loggingEnabled;
+
+  const startTime = Date.now();
+  const prompt = req.body.prompt;
+
   try {
     const response = await fetch(`http://${rm.host}:${rm.port}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: req.body.prompt, n_predict: req.body.n_predict || 256 }),
+      body: JSON.stringify({ prompt, n_predict: req.body.n_predict || 256 }),
     });
     const data = await response.json();
+    const durationMs = Date.now() - startTime;
+
+    if (loggingEnabled) {
+      const dataContent = (data as any).content || '';
+      const dataEvalTokens = (data as any).eval_tokens;
+      const dataTokensEvaluated = (data as any).tokens_evaluated;
+      
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        modelId: rm.modelId,
+        modelName,
+        prompt,
+        response: dataContent,
+        requestTokens: dataEvalTokens || prompt.split(' ').length,
+        responseTokens: dataTokensEvaluated || dataContent.split(' ').length,
+        durationMs,
+      };
+      appendChatLog(logEntry);
+
+      updateMetrics(
+        rm.modelId,
+        modelName,
+        logEntry.requestTokens || 0,
+        logEntry.responseTokens || 0,
+        durationMs
+      );
+    }
+
     res.json(data);
   } catch (err: any) {
     res.status(502).json({ error: `Failed to reach model server at ${rm.host}:${rm.port}: ${err.message}` });

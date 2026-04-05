@@ -19,4 +19,5 @@ export interface AppConfig {
   defaultGpuLayers: number;
   serverPort: number;
   models: ModelEntry[];
+  loggingEnabled: boolean;
 }

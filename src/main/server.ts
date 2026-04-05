@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { modelRouter, getRunningProcess } from './routes/models';
 import { configRouter } from './routes/config';
 import { prerequisitesRouter } from './routes/prerequisites';
+import { metricsRouter } from './routes/metrics';
 
 export async function startServer(port: number): Promise<http.Server> {
   const app = express();
@@ -20,6 +21,7 @@ export async function startServer(port: number): Promise<http.Server> {
   app.use('/api/models', modelRouter);
   app.use('/api/config', configRouter);
   app.use('/api/prerequisites', prerequisitesRouter);
+  app.use('/api/metrics', metricsRouter);
 
   // SPA fallback
   app.get('*', (_req, res) => {
