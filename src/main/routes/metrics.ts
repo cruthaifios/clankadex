@@ -3,11 +3,13 @@ import {
   loadMetrics,
   loadTodayLogs,
   getMetricsSummary,
-  listLogFiles,
+  getLogFiles,
   listMetricsFiles,
+} from '../logging';
+import {
   ModelMetrics,
   ChatLogEntry,
-} from '../logging';
+} from '../types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getDataDir } from '../store';
@@ -67,7 +69,7 @@ metricsRouter.get('/:modelName/logs', (req: Request, res: Response) => {
 });
 
 metricsRouter.get('/logs/files', (_req: Request, res: Response) => {
-  const files = listLogFiles();
+  const files = getLogFiles();
   res.json(files);
 });
 

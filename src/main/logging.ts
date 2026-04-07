@@ -1,39 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { getDataDir, ensureDataDir } from './store';
+import { getDataDir, ensureDataDir, appendLogs, getLogs, listLogFiles } from './store';
+import { ChatLogEntry, ModelMetrics } from './types';
 
-export interface ChatLogEntry {
-  timestamp: string;
-  modelId: string;
-  modelName: string;
-  prompt: string;
-  response: string;
-  requestTokens?: number;
-  responseTokens?: number;
-  durationMs: number;
-}
-
-export interface ModelMetrics {
-  modelId: string;
-  modelName: string;
-  totalRequests: number;
-  totalPromptTokens: number;
-  totalResponseTokens: number;
-  totalDurationMs: number;
-  firstRequestAt: string;
-  lastRequestAt: string;
-}
-
-const LOGS_DIR = 'logs';
 const METRICS_DIR = 'metrics';
-
-function getLogsDir(): string {
-  const dir = path.join(getDataDir(), LOGS_DIR);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  return dir;
-}
 
 function getMetricsDir(): string {
   const dir = path.join(getDataDir(), METRICS_DIR);
@@ -54,41 +24,22 @@ function getMetricsFileName(modelName: string): string {
   return `metrics_${safeName}.json`;
 }
 
-function getLogFilePath(modelName: string): string {
-  return path.join(getLogsDir(), getLogFileName(modelName));
-}
-
 function getMetricsFilePath(modelName: string): string {
   return path.join(getMetricsDir(), getMetricsFileName(modelName));
 }
 
 export function appendChatLog(entry: ChatLogEntry): void {
-  ensureDataDir();
-  const logPath = getLogFilePath(entry.modelName);
-  
-  let logs: ChatLogEntry[] = [];
-  if (fs.existsSync(logPath)) {
-    try {
-      logs = JSON.parse(fs.readFileSync(logPath, 'utf-8'));
-    } catch {
-      logs = [];
-    }
-  }
-  
-  logs.push(entry);
-  fs.writeFileSync(logPath, JSON.stringify(logs, null, 2));
+  const filename = getLogFileName(entry.modelName);
+  appendLogs(entry, filename);
 }
 
 export function loadTodayLogs(modelName: string): ChatLogEntry[] {
-  const logPath = getLogFilePath(modelName);
-  if (!fs.existsSync(logPath)) {
-    return [];
-  }
-  try {
-    return JSON.parse(fs.readFileSync(logPath, 'utf-8'));
-  } catch {
-    return [];
-  }
+  const filename = getLogFileName(modelName);
+  return getLogs(filename);
+}
+
+export function getLogFiles(): string[] {
+  return listLogFiles();
 }
 
 export function saveMetrics(modelName: string, metrics: ModelMetrics): void {
@@ -156,14 +107,6 @@ export function getMetricsSummary(metrics: ModelMetrics): {
     avgResponseTokens: metrics.totalRequests > 0 ? metrics.totalResponseTokens / metrics.totalRequests : 0,
     avgDurationMs: metrics.totalRequests > 0 ? metrics.totalDurationMs / metrics.totalRequests : 0,
   };
-}
-
-export function listLogFiles(): string[] {
-  const logsDir = getLogsDir();
-  if (!fs.existsSync(logsDir)) {
-    return [];
-  }
-  return fs.readdirSync(logsDir).filter(f => f.startsWith('log_') && f.endsWith('.json'));
 }
 
 export function listMetricsFiles(): string[] {
