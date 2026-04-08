@@ -5,8 +5,14 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { modelRouter, getRunningProcess } from './routes/models';
 import { configRouter } from './routes/config';
 import { prerequisitesRouter } from './routes/prerequisites';
+import { pluginRouter } from './routes/plugins';
+import { loadPlugins } from './plugins/loader';
+import { pluginRegistry } from './plugins/registry';
 
 export async function startServer(port: number): Promise<http.Server> {
+  // Load plugins before finalizing routes
+  await loadPlugins();
+
   const app = express();
   app.use(express.json());
 
@@ -16,10 +22,18 @@ export async function startServer(port: number): Promise<http.Server> {
   // Serve images
   app.use('/img', express.static(path.join(__dirname, '..', '..', 'img')));
 
-  // API routes
+  // Core API routes
   app.use('/api/models', modelRouter);
   app.use('/api/config', configRouter);
   app.use('/api/prerequisites', prerequisitesRouter);
+
+  // Plugin API routes (list, views, state)
+  app.use('/api/plugins', pluginRouter);
+
+  // Per-plugin custom routes registered via api.registerRoute(...)
+  for (const [name, router] of pluginRegistry.getPluginRouters()) {
+    app.use(`/api/plugins/${name}`, router);
+  }
 
   // SPA fallback
   app.get('*', (_req, res) => {

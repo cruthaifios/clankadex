@@ -1,4 +1,4 @@
-import { ModelEntry, AppConfig } from './types';
+import { ModelEntry, AppConfig, PluginInfo } from './types';
 
 const BASE = '';
 
@@ -67,5 +67,10 @@ export async function updateConfig(data: Partial<AppConfig>): Promise<AppConfig>
 
 export async function checkPrerequisites(): Promise<Record<string, any>> {
   const res = await fetch(`${BASE}/api/prerequisites/check`);
+  return res.json();
+}
+
+export async function fetchPlugins(): Promise<{ plugins: PluginInfo[] }> {
+  const res = await fetch(`${BASE}/api/plugins`);
   return res.json();
 }

@@ -6,12 +6,13 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { ModelEntry, AppConfig } from '../types';
+import { ModelEntry, AppConfig, PluginSidebarItem, PluginInfo } from '../types';
 import * as api from '../api';
 import { Sidebar } from './Sidebar';
 import { AddModelDialog } from './AddModelDialog';
 import { SettingsPanel } from './SettingsPanel';
 import { ModelSettingsDialog } from './ModelSettingsDialog';
+import { PluginView } from './PluginView';
 
 export function App() {
   const [models, setModels] = useState<ModelEntry[]>([]);
@@ -23,6 +24,9 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showModelSettingsDialog, setShowModelSettingsDialog] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [pluginSidebarItems, setPluginSidebarItems] = useState<PluginSidebarItem[]>([]);
+  const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [selectedPluginView, setSelectedPluginView] = useState<{ pluginName: string; viewId: string } | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -32,8 +36,20 @@ export function App() {
     setRunningModelIds(data.runningModelIds || []);
   }, []);
 
+  const loadPlugins = useCallback(async () => {
+    try {
+      const data = await api.fetchPlugins();
+      setPlugins(data.plugins);
+      const items = data.plugins.flatMap(p => p.sidebarItems);
+      setPluginSidebarItems(items);
+    } catch {
+      // Plugin API unavailable — no plugins installed
+    }
+  }, []);
+
   useEffect(() => { loadModels(); }, [loadModels]);
   useEffect(() => { api.fetchConfig().then(setConfig); }, []);
+  useEffect(() => { loadPlugins(); }, [loadPlugins]);
 
   useEffect(() => {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -59,6 +75,16 @@ export function App() {
 
   const selectedModel = models.find(m => m.id === selectedId) || null;
   const isRunning = selectedModel ? runningModelIds.includes(selectedModel.id) : false;
+
+  const handleSelectModel = (id: string) => {
+    setSelectedId(id);
+    setSelectedPluginView(null);
+  };
+
+  const handleSelectPlugin = (pluginName: string, viewId: string) => {
+    setSelectedPluginView({ pluginName, viewId });
+    setSelectedId(null);
+  };
 
   const handleStart = async () => {
     if (!selectedModel) return;
@@ -109,14 +135,11 @@ export function App() {
     if (!selectedModel) {
       return;
     }
-    // Update the specific model with settings
     const updatedModel = { ...selectedModel, contextSize: settings.contextSize, gpuLayers: settings.gpuLayers };
     const updatedModels = models.map((m: any) =>
       m.id === showModelSettingsDialog ? updatedModel : m
     );
-    // Save updated models back to JSON file
-    api.updateModel(updatedModel.id, updatedModel)
-    // Update local state
+    api.updateModel(updatedModel.id, updatedModel);
     setModels(updatedModels);
     setShowModelSettingsDialog(null);
   };
@@ -125,6 +148,7 @@ export function App() {
     return (
       <SettingsPanel
         config={config}
+        plugins={plugins}
         onSave={async (c: Partial<AppConfig>) => {
           const updated = await api.updateConfig(c);
           setConfig(updated);
@@ -141,9 +165,12 @@ export function App() {
         models={models}
         selectedId={selectedId}
         runningModelIds={runningModelIds}
-        onSelect={setSelectedId}
+        onSelect={handleSelectModel}
         onDelete={handleDeleteModel}
         onEditModelSettings={handleEditModelSettings}
+        pluginSidebarItems={pluginSidebarItems}
+        selectedPluginView={selectedPluginView}
+        onSelectPlugin={handleSelectPlugin}
       />
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden' }}>
         {/* Header */}
@@ -166,7 +193,9 @@ export function App() {
         </Stack>
 
         {/* Main content */}
-        {!selectedModel ? (
+        {selectedPluginView ? (
+          <PluginView pluginName={selectedPluginView.pluginName} viewId={selectedPluginView.viewId} />
+        ) : !selectedModel ? (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography color="text.secondary" variant="h6">← Select a model from the sidebar</Typography>
           </Box>

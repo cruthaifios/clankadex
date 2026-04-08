@@ -1,3 +1,20 @@
+export interface PluginSidebarItem {
+  pluginName: string;
+  id: string;
+  label: string;
+  icon?: string;
+  viewId: string;
+}
+
+export interface PluginInfo {
+  name: string;
+  version: string;
+  description?: string;
+  icon?: string;
+  sidebarItems: PluginSidebarItem[];
+  enabled: boolean;
+}
+
 export interface ModelEntry {
   id: string;
   name: string;
