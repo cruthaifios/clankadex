@@ -11,6 +11,7 @@ export interface ModelEntry {
   remote: boolean;
   host: string;
   port: number;
+  proxyPort?: number;
 }
 
 export interface AppConfig {

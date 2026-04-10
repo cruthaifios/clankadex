@@ -20,6 +20,7 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
   const [name, setName] = useState(model.name);
   const [host, setHost] = useState(model.host);
   const [port, setPort] = useState(model.port);
+  const [proxyPort, setProxyPort] = useState(model.proxyPort || 8081);
   const [notes, setNotes] = useState(model.notes);
   const [filePath, setFilePath] = useState(model.filePath);
 
@@ -29,7 +30,7 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
   }, [modelId, defaultContextSize, defaultGpuLayers]);
 
   const handleSubmit = async () => {
-    onSave({ ...model, contextSize, gpuLayers, name, host, port, notes });
+    onSave({ ...model, contextSize, gpuLayers, name, host, port, notes, proxyPort });
   };
 
   return (
@@ -66,6 +67,14 @@ export function ModelSettingsDialog({ modelId, model, defaultContextSize, defaul
               type="number"
               value={port}
               onChange={e => setPort(Number(e.target.value))}
+              sx={{ width: 120 }}
+            />
+            <TextField
+              label="Proxy Port"
+              type="number"
+              value={proxyPort}
+              onChange={e => setProxyPort(Number(e.target.value))}
+              helperText="Proxy port for logging (default 8081)"
               sx={{ width: 120 }}
             />
           </Stack>

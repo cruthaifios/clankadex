@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { ChatLogEntry } from './types';
+import { ChatLogEntry, ModelEntry, AppConfig, ModelMetrics } from './types';
 
-import { ModelMetrics } from './types';
+export { ModelEntry, AppConfig, ModelMetrics };
 
 export function getDataDir(): string {
   try {
@@ -19,30 +19,6 @@ export function getDataDir(): string {
 export function ensureDataDir() {
   const dir = getDataDir();
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-export interface ModelEntry {
-  id: string;
-  name: string;
-  filePath: string;
-  format: string;
-  sizeBytes: number | null;
-  contextSize: number;
-  gpuLayers: number;
-  notes: string;
-  addedAt: string;
-  remote: boolean;
-  host: string;
-  port: number;
-}
-
-export interface AppConfig {
-  llamaCppPath: string;
-  defaultContextSize: number;
-  defaultGpuLayers: number;
-  serverPort: number;
-  models: ModelEntry[];
-  loggingEnabled: boolean;
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -172,6 +148,55 @@ export function loadMetrics(modelName: string): ModelMetrics | null {
   } catch {
     return null;
   }
+}
+
+export function updateMetrics(modelId: string, modelName: string, promptTokens: number, responseTokens: number, durationMs: number): ModelMetrics {
+  const existing = loadMetrics(modelName);
+  const now = new Date().toISOString();
+  
+  if (!existing) {
+    const metrics: ModelMetrics = {
+      modelId,
+      modelName,
+      totalRequests: 1,
+      totalPromptTokens: promptTokens,
+      totalResponseTokens: responseTokens,
+      totalDurationMs: durationMs,
+      firstRequestAt: now,
+      lastRequestAt: now,
+    };
+    saveMetrics(modelName, metrics);
+    return metrics;
+  } else {
+    const updated: ModelMetrics = {
+      ...existing,
+      totalRequests: existing.totalRequests + 1,
+      totalPromptTokens: existing.totalPromptTokens + promptTokens,
+      totalResponseTokens: existing.totalResponseTokens + responseTokens,
+      totalDurationMs: existing.totalDurationMs + durationMs,
+      lastRequestAt: now,
+    };
+    saveMetrics(modelName, updated);
+    return updated;
+  }
+}
+
+export function getMetricsSummary(metrics: ModelMetrics): {
+  avgTokensPerSecond: number;
+  avgPromptTokens: number;
+  avgResponseTokens: number;
+  avgDurationMs: number;
+} {
+  const avgTokensPerSecond=metrics.totalDurationMs > 0 
+    ? (metrics.totalPromptTokens + metrics.totalResponseTokens) / (metrics.totalDurationMs / 1000)
+    : 0;
+  
+  return {
+    avgTokensPerSecond,
+    avgPromptTokens: metrics.totalRequests > 0 ? metrics.totalPromptTokens / metrics.totalRequests : 0,
+    avgResponseTokens: metrics.totalRequests > 0 ? metrics.totalResponseTokens / metrics.totalRequests : 0,
+    avgDurationMs: metrics.totalRequests > 0 ? metrics.totalDurationMs / metrics.totalRequests : 0,
+  };
 }
 
 export function listMetricsFiles(): string[] {

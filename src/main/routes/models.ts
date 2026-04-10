@@ -3,15 +3,19 @@ import { ChildProcess, spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import { getModels, saveModels, getConfig, ModelEntry } from '../store';
 import { appendChatLog, updateMetrics } from '../logging';
+import { createProxy, stopProxy } from '../proxy';
 
 export const modelRouter = Router();
 
 interface RunningModel {
   modelId: string;
   process: ChildProcess | null;  // null for remote models
+  proxyServer: any | null;  // null for remote models
   outputBuffer: string;
   host: string;
   port: number;
+  proxyHost: string;
+  proxyPort: number;
   remote: boolean;
 }
 
@@ -36,7 +40,7 @@ modelRouter.get('/', (_req: Request, res: Response) => {
 
 // Add model
 modelRouter.post('/', (req: Request, res: Response) => {
-  const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port } = req.body;
+  const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port, proxyPort } = req.body;
   if (!name) {
     res.status(400).json({ error: 'name is required' });
     return;
@@ -63,6 +67,7 @@ modelRouter.post('/', (req: Request, res: Response) => {
     remote: !!remote,
     host: host || '127.0.0.1',
     port: port || 8080,
+    proxyPort: proxyPort || 8081,
   };
   models.push(entry);
   saveModels(models);
@@ -75,6 +80,13 @@ modelRouter.delete('/:id', (req: Request, res: Response) => {
   const running = runningModels.get(req.params.id);
   if (running) {
     if (running.process) running.process.kill('SIGTERM');
+    if (running.proxyServer) {
+      try {
+        stopProxy(running.modelId);
+      } catch (e) {
+        console.error('Error stopping proxy:', e);
+      }
+    }
     runningModels.delete(req.params.id);
     broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
   }
@@ -86,7 +98,7 @@ modelRouter.delete('/:id', (req: Request, res: Response) => {
 
 // Update model
 modelRouter.put('/:id', (req: Request, res: Response) => {
-  const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port } = req.body;
+  const { name, filePath, format, contextSize, gpuLayers, notes, remote, host, port, proxyPort } = req.body;
   if (!name) {
     res.status(400).json({ error: 'name is required' });
     return;
@@ -103,6 +115,13 @@ modelRouter.put('/:id', (req: Request, res: Response) => {
   const running = runningModels.get(req.params.id);
   if (running) {
     if (running.process) running.process.kill('SIGTERM');
+    if (running.proxyServer) {
+      try {
+        stopProxy(running.modelId);
+      } catch (e) {
+        console.error('Error stopping proxy:', e);
+      }
+    }
     runningModels.delete(req.params.id);
     broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
   }
@@ -120,6 +139,7 @@ modelRouter.put('/:id', (req: Request, res: Response) => {
     remote: !!remote,
     host: host || '127.0.0.1',
     port: port || 8080,
+    proxyPort: proxyPort || 8081,
   };
   models = models.map(m => m.id == req.params.id ? entry : m);
   saveModels(models);
@@ -147,7 +167,7 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
     } catch (_err) {
       // Still register it — user may want to connect even if health check fails
     }
-    const rm: RunningModel = { modelId: model.id, process: null, outputBuffer: `[Connected to remote server at ${host}:${port}]\n`, host, port, remote: true };
+    const rm: RunningModel = { modelId: model.id, process: null, proxyServer: null, outputBuffer: `[Connected to remote server at ${host}:${port}]`, host, port, proxyHost: '', proxyPort: model.proxyPort || 8081, remote: true };
     runningModels.set(model.id, rm);
     broadcast({ type: 'output', data: rm.outputBuffer });
     broadcast({ type: 'status', status: 'running', modelId: model.id });
@@ -163,6 +183,9 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
   }
 
   const serverPort = model.port || config.serverPort || 8080;
+  const proxyPort = model.proxyPort || 8081;
+  
+  // Start llama-server on the model's native port (serverPort)
   const args = [
     '--model', model.filePath,
     '--ctx-size', String(model.contextSize),
@@ -187,10 +210,39 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
   proc.stderr?.on('data', appendOutput);
   proc.on('exit', (code) => {
     broadcast({ type: 'status', status: 'stopped', modelId: model.id, code });
+    if (runningModels.get(model.id)?.proxyServer) {
+      try {
+        stopProxy(runningModels.get(model.id)!.modelId);
+      } catch (e) {
+        console.error('Error stopping proxy on exit:', e);
+      }
+    }
     runningModels.delete(model.id);
   });
 
-  runningModels.set(model.id, { modelId: model.id, process: proc, outputBuffer, host: '127.0.0.1', port: serverPort, remote: false });
+  // Create proxy server that listens on proxyPort and forwards to serverPort
+  const proxyConfig = {
+    proxyPort,
+    targetHost: model.host || '127.0.0.1',
+    targetPort: serverPort,
+  };
+  
+  const proxyServer = createProxy(proxyConfig, model.id);
+  proxyServer.listen(proxyPort, model.host || '127.0.0.1', () => {
+    console.log(`Proxy for ${model.name} listening on ${proxyPort}, forwarding to ${model.host}:${serverPort}`);
+  });
+
+  runningModels.set(model.id, { 
+    modelId: model.id, 
+    process: proc, 
+    proxyServer, 
+    outputBuffer, 
+    host: model.host || '127.0.0.1', 
+    port: serverPort,
+    proxyHost: model.host || '127.0.0.1',
+    proxyPort,
+    remote: false 
+  });
 
   broadcast({ type: 'status', status: 'running', modelId: model.id });
   res.json({ ok: true, port: serverPort });
@@ -202,6 +254,13 @@ modelRouter.post('/stop', (_req: Request, res: Response) => {
   // Stop first running model
   const [id, rm] = runningModels.entries().next().value!;
   if (rm.process) rm.process.kill('SIGTERM');
+  if (rm.proxyServer) {
+    try {
+      stopProxy(rm.modelId);
+    } catch (e) {
+      console.error('Error stopping proxy:', e);
+    }
+  }
   runningModels.delete(id);
   broadcast({ type: 'status', status: 'stopped', modelId: id });
   res.json({ ok: true });
@@ -212,12 +271,19 @@ modelRouter.post('/:id/stop', (req: Request, res: Response) => {
   const rm = runningModels.get(req.params.id);
   if (!rm) { res.status(404).json({ error: 'Model not running' }); return; }
   if (rm.process) rm.process.kill('SIGTERM');
+  if (rm.proxyServer) {
+    try {
+      stopProxy(rm.modelId);
+    } catch (e) {
+      console.error('Error stopping proxy:', e);
+    }
+  }
   runningModels.delete(req.params.id);
   broadcast({ type: 'status', status: 'stopped', modelId: req.params.id });
   res.json({ ok: true });
 });
 
-// Chat (proxy to the model's own server)
+// Chat (use proxy to capture metrics)
 modelRouter.post('/chat', async (req: Request, res: Response) => {
   // Find the target model — prefer modelId from body, else first running
   const targetId = req.body.modelId;
@@ -239,7 +305,11 @@ modelRouter.post('/chat', async (req: Request, res: Response) => {
   const prompt = req.body.prompt;
 
   try {
-    const response = await fetch(`http://${rm.host}:${rm.port}/completion`, {
+    // Use proxy instead of direct model connection
+    const proxyHost = rm.proxyHost || rm.host;
+    const proxyPort = rm.proxyPort || 8081;
+    
+    const response = await fetch(`http://${proxyHost}:${proxyPort}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, n_predict: req.body.n_predict || 256 }),
@@ -275,6 +345,6 @@ modelRouter.post('/chat', async (req: Request, res: Response) => {
 
     res.json(data);
   } catch (err: any) {
-    res.status(502).json({ error: `Failed to reach model server at ${rm.host}:${rm.port}: ${err.message}` });
+    res.status(502).json({ error: `Failed to reach proxy at ${rm.proxyHost}:${rm.proxyPort}: ${err.message}` });
   }
 });

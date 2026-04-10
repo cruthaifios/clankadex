@@ -22,6 +22,7 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
   const [gpuLayers, setGpuLayers] = useState(defaultGpuLayers);
   const [host, setHost] = useState('127.0.0.1');
   const [port, setPort] = useState(8080);
+  const [proxyPort, setProxyPort] = useState(8081);
   const [notes, setNotes] = useState('');
 
   const canSubmit = remote
@@ -36,9 +37,9 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
   const handleSubmit = () => {
     if (!canSubmit) return;
     if (remote) {
-      onAdd({ name: name.trim(), remote: true, host: host.trim(), port, notes, filePath: '', format: '', contextSize: 0, gpuLayers: 0 });
+      onAdd({ name: name.trim(), remote: true, host: host.trim(), port, notes, filePath: '', format: '', contextSize: 0, gpuLayers: 0, proxyPort });
     } else {
-      onAdd({ name: name.trim(), remote: false, filePath: filePath.trim(), format, contextSize, gpuLayers, port, host: '127.0.0.1', notes });
+      onAdd({ name: name.trim(), remote: false, filePath: filePath.trim(), format, contextSize, gpuLayers, port, host: '127.0.0.1', notes, proxyPort });
     }
   };
 
@@ -70,8 +71,8 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
                 <TextField label="Format" value={format} onChange={e => setFormat(e.target.value)} placeholder="gguf" />
                 <TextField label="Context Size" type="number" value={contextSize} onChange={e => setContextSize(Number(e.target.value))} />
                 <TextField label="GPU Layers" type="number" value={gpuLayers} onChange={e => setGpuLayers(Number(e.target.value))} />
+                <TextField label="Proxy Port" type="number" value={proxyPort} onChange={e => setProxyPort(Number(e.target.value))} helperText="Proxy port for logging (default 8081)" sx={{ width: 160 }} />
               </Stack>
-              <TextField label="Port" type="number" value={port} onChange={e => setPort(Number(e.target.value))} helperText="llama-server port for this model (default 8080)" sx={{ width: 160 }} />
             </>
           )}
           <TextField
