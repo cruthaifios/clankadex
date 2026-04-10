@@ -3,6 +3,8 @@ import * as path from 'path';
 
 import { ChatLogEntry } from './types';
 
+import { ModelMetrics } from './types';
+
 export function getDataDir(): string {
   try {
     // In packaged Electron, app.asar is read-only — use the OS user data dir instead.
@@ -135,4 +137,47 @@ export function listLogFiles(): string[] {
     return [];
   }
   return fs.readdirSync(logsDir).filter(f => f.startsWith('log_') && f.endsWith('.json'));
+}
+
+function getMetricsDir(): string {
+  const dir = path.join(getDataDir(), METRICS_DIR);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+function getMetricsFileName(modelName: string): string {
+  const safeName = modelName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `metrics_${safeName}.json`;
+}
+
+function getMetricsFilePath(modelName: string): string {
+  return path.join(getMetricsDir(), getMetricsFileName(modelName));
+}
+
+export function saveMetrics(modelName: string, metrics: ModelMetrics): void {
+  ensureDataDir();
+  const metricsPath = getMetricsFilePath(modelName);
+  fs.writeFileSync(metricsPath, JSON.stringify(metrics, null, 2));
+}
+
+export function loadMetrics(modelName: string): ModelMetrics | null {
+  const metricsPath = getMetricsFilePath(modelName);
+  if (!fs.existsSync(metricsPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(metricsPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+export function listMetricsFiles(): string[] {
+  const metricsDir = getMetricsDir();
+  if (!fs.existsSync(metricsDir)) {
+    return [];
+  }
+  return fs.readdirSync(metricsDir).filter(f => f.startsWith('metrics_') && f.endsWith('.json'));
 }

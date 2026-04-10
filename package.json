@@ -11,7 +11,9 @@
     "dev": "npm run build && electron . --no-sandbox",
     "start": "electron . --no-sandbox",
     "web": "npm run build && node dist/main/web.js",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai",
@@ -44,8 +46,16 @@
       "target": "dmg",
       "category": "public.app-category.developer-tools",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "win": {
@@ -62,9 +72,12 @@
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
     "electron": "^28.2.0",
     "electron-builder": "^24.13.3",
     "esbuild": "^0.19.12",
+    "eslint": "^10.2.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {
