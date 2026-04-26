@@ -8,7 +8,7 @@ function getLogFileName(modelName: string): string {
 }
 
 export function appendChatLog(entry: ChatLogEntry): void {
-  const filename = getLogFileName(entry.modelName);
+  const filename = getLogFileName(entry.modelId);
   appendLogs(entry, filename);
 }
 

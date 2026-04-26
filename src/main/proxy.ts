@@ -1,6 +1,7 @@
 import * as http from 'http';
-import { appendLogs } from './store';
-import { ModelMetrics } from './types';
+import { createProxyServer } from 'http-proxy';
+import { ChatLogEntry, ModelMetrics } from './types';
+import { appendChatLog, updateMetrics } from './logging';
 
 export interface ProxyConfig {
   proxyPort: number;
@@ -42,68 +43,98 @@ function getProxyServerFromModelId(modelId: string): http.Server | null {
   return data ? data.server : null;
 }
 
+// Helper to extract prompt from request body
+function extractPrompt(body: string): string {
+  try {
+    const json = JSON.parse(body);
+    // Handle /v1/chat/completions format with messages
+    if (json.messages && Array.isArray(json.messages)) {
+      // Get the last user message as the prompt
+      const lastUserMsg = [...json.messages].reverse().find((m: any) => m.role === 'user');
+      return lastUserMsg?.content || '';
+    }
+    // Handle /v1/completions format with prompt
+    if (json.prompt) {
+      return Array.isArray(json.prompt) ? json.prompt.join('') : json.prompt;
+    }
+    return body;
+  } catch {
+    return body;
+  }
+}
+
+// Helper to extract content from response
+function extractResponseContent(data: string, isStreaming: boolean): { content: string; tokens?: number } {
+  try {
+    if (isStreaming) {
+      // Handle SSE streaming format (e.g., "data: {...}")
+      const lines = data.split('\n').filter(l => l.startsWith('data: '));
+      let fullContent = '';
+      let lastTokens: number | undefined;
+      
+      for (const line of lines) {
+        try {
+          const json = JSON.parse(line.slice(6)); // Remove "data: " prefix
+          if (json.choices && json.choices[0]?.delta?.content) {
+            fullContent += json.choices[0].delta.content;
+          }
+          if (json.usage?.completion_tokens) {
+            lastTokens = json.usage.completion_tokens;
+          }
+        } catch { /* skip invalid JSON lines */ }
+      }
+      return { content: fullContent, tokens: lastTokens };
+    } else {
+      // Non-streaming response
+      const json = JSON.parse(data);
+      const content = json.choices?.[0]?.message?.content || json.choices?.[0]?.text || '';
+      const tokens = json.usage?.completion_tokens;
+      return { content, tokens };
+    }
+  } catch {
+    return { content: data };
+  }
+}
+
 // Create proxy server
 export function createProxy(config: ProxyConfig, modelId: string): http.Server {
-  const server = http.createServer((req, res) => {
-    const startTime = Date.now();
-    
-    let body = '';
-    req.on('data', (chunk: Buffer) => { body += chunk; });
-    req.on('end', () => {
-      const capturedRequest: CapturedRequest = {
-        prompt: req.method === 'POST' ? JSON.parse(body || '{}').prompt || '' : '',
-        n_predict: req.method === 'POST' ? JSON.parse(body || '{}').n_predict : undefined,
-        method: req.method,
-        path: (req.url || '/') as string,
-        timestamp: new Date().toISOString(),
-      };
+  const targetUrl = new URL(`http://${config.targetHost}:${config.targetPort}`);
+  console.log(`[PROXY] Creating proxy for model ${modelId} -> ${targetUrl}`);
 
-      const targetUrl = `http://${config.targetHost}:${config.targetPort}${req.url}`;
-      
-      const targetReq = http.request(targetUrl, (targetRes) => {
-        let responseBody = '';
-        
-        targetRes.on('data', (chunk: Buffer) => {
-          responseBody += chunk;
-        });
-        
-        targetRes.on('end', () => {
-          try {
-            const parsedBody = JSON.parse(responseBody);
-            const capturedResponse: CapturedResponse = {
-              content: parsedBody.content || '',
-              eval_tokens: parsedBody.eval_tokens,
-              tokens_evaluated: parsedBody.tokens_evaluated,
-              durationMs: Date.now() - startTime,
-            };
-            
-            // Save captured request/response for logging and metrics
-            saveCapturedData(modelId, capturedRequest, capturedResponse);
-          } catch (e) {
-            // Non-JSON response, skip detailed logging
-          }
-        });
-      });
-      
-      targetReq.on('error', (err: any) => {
-        console.error(`Proxy error for ${modelId}:`, err.message);
-        res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Proxy error: ' + err.message }));
-      });
-      
-      targetReq.end();
-    });
-    
-    // Write response
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+  const proxy = createProxyServer({
+    target: targetUrl,
+    changeOrigin: true,
   });
-  
-  server.on('error', (err: any) => {
-    console.error(`Proxy server error for ${modelId}:`, err.message);
+
+  proxy.on('proxyReq', (proxyReq, req) => {
+    console.log(`[PROXY REQUEST] ${req.method} ${req.url} -> ${targetUrl}`);
+    console.log(`[PROXY HEADERS] Host: ${proxyReq.getHeader('host')}`);
   });
-  
+
+  proxy.on('proxyRes', (proxyRes: any, req: any) => {
+    console.log(`[PROXY RESPONSE] ${req.url} <- Status: ${proxyRes.statusCode}`);
+  });
+
+  proxy.on('error', (err, req, res) => {
+    console.error(`[PROXY ERROR] Failed to proxy ${req.url}:`, err.message);
+    if (res && 'headersSent' in res && !res.headersSent) {
+      (res as http.ServerResponse).writeHead(502, { 'Content-Type': 'application/json' });
+      (res as http.ServerResponse).end(JSON.stringify({ error: 'Proxy error', message: err.message }));
+    }
+  });
+
+  const server = http.createServer((req, res) => {
+    console.log(`[PROXY INCOMING] ${req.method} ${req.url}`);
+    proxy.web(req, res);
+  });
+
+  server.on('error', (err) => {
+    console.error(`[PROXY SERVER ERROR]`, err.message);
+  });
+
   proxyServers.set(modelId, { server, modelId });
-  
+  console.log(`[PROXY] Server registered for model ${modelId}`);
+
   return server;
 }
 
@@ -111,11 +142,18 @@ export function createProxy(config: ProxyConfig, modelId: string): http.Server {
 export function stopProxy(modelId: string): boolean {
   const data = proxyServers.get(modelId);
   if (data) {
-    data.server.close(() => {
+    console.log(`[PROXY] Stopping proxy for model ${modelId}`);
+    data.server.close((err) => {
+      if (err) {
+        console.error(`[PROXY] Error closing proxy for ${modelId}:`, err.message);
+      } else {
+        console.log(`[PROXY] Proxy for model ${modelId} stopped`);
+      }
       proxyServers.delete(modelId);
     });
     return true;
   }
+  console.warn(`[PROXY] No proxy found for model ${modelId}`);
   return false;
 }
 
@@ -131,28 +169,38 @@ export function stopAllProxies(): void {
 // Save captured request/response data
 export function saveCapturedData(modelId: string, request: CapturedRequest, response: CapturedResponse): void {
   try {
+    const promptTokens = request.prompt.split(/\s+/).filter(Boolean).length;
+    const responseTokens = response.content.split(/\s+/).filter(Boolean).length;
+
     // Update metrics
-    const updatedMetrics = require('./store').updateMetrics(
+    updateMetrics(
       modelId,
-      modelId, // modelName
-      request.prompt.split(' ').length, // prompt tokens (approximate)
-      response.content.split(' ').length, // response tokens (approximate)
+      modelId,
+      promptTokens,
+      responseTokens,
       response.durationMs
     );
-    
-    // Save log entry
-    const logEntry = {
+
+    // Log PROMPT entry
+    const promptLogEntry: ChatLogEntry = {
       timestamp: new Date().toISOString(),
       modelId,
-      modelName: modelId,
-      prompt: request.prompt,
-      response: response.content,
-      requestTokens: request.prompt.split(' ').length,
-      responseTokens: response.content.split(' ').length,
+      message: request.prompt,
+      type: 'PROMPT',
+      tokens: promptTokens,
+    };
+    appendChatLog(promptLogEntry);
+
+    // Log RESPONSE entry
+    const responseLogEntry: ChatLogEntry = {
+      timestamp: new Date().toISOString(),
+      modelId,
+      message: response.content,
+      type: 'RESPONSE',
+      tokens: responseTokens,
       durationMs: response.durationMs,
     };
-    
-    appendLogs(logEntry, `log_${modelId}.json`);
+    appendChatLog(responseLogEntry);
   } catch (e) {
     console.error('Error saving captured data:', e);
   }

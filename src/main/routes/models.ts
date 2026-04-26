@@ -3,7 +3,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import { getModels, saveModels, getConfig, ModelEntry } from '../store';
 import { appendChatLog, updateMetrics } from '../logging';
-import { createProxy, stopProxy } from '../proxy';
+import { createProxy, stopProxy, ProxyConfig } from '../proxy';
 
 export const modelRouter = Router();
 
@@ -221,15 +221,23 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
   });
 
   // Create proxy server that listens on proxyPort and forwards to serverPort
-  const proxyConfig = {
+  const proxyConfig: ProxyConfig = {
     proxyPort,
     targetHost: model.host || '127.0.0.1',
     targetPort: serverPort,
   };
   
   const proxyServer = createProxy(proxyConfig, model.id);
-  proxyServer.listen(proxyPort, model.host || '127.0.0.1', () => {
-    console.log(`Proxy for ${model.name} listening on ${proxyPort}, forwarding to ${model.host}:${serverPort}`);
+  // proxyServer.listen(proxyPort, model.host || '127.0.0.1', () => {
+  //   console.log(`Proxy for ${model.name} listening on ${proxyPort}, forwarding to ${model.host}:${serverPort}`);
+  // });
+
+  await new Promise<void>((resolve, reject) => {
+    proxyServer.on('listening', resolve);
+    proxyServer.on('error', reject);
+    proxyServer.listen(proxyPort, model.host || '127.0.0.1', () => {
+      console.log(`Proxy for ${model.name} listening on ${proxyPort}, forwarding to ${model.host}:${serverPort}`);
+    });
   });
 
   runningModels.set(model.id, { 
@@ -285,6 +293,7 @@ modelRouter.post('/:id/stop', (req: Request, res: Response) => {
 
 // Chat (use proxy to capture metrics)
 modelRouter.post('/chat', async (req: Request, res: Response) => {
+  console.log("SAM hit chat endpoint")
   // Find the target model — prefer modelId from body, else first running
   const targetId = req.body.modelId;
   let rm: RunningModel | undefined;
@@ -317,28 +326,40 @@ modelRouter.post('/chat', async (req: Request, res: Response) => {
     const data = await response.json();
     const durationMs = Date.now() - startTime;
 
-    if (loggingEnabled) {
+if (loggingEnabled) {
       const dataContent = (data as any).content || '';
       const dataEvalTokens = (data as any).eval_tokens;
       const dataTokensEvaluated = (data as any).tokens_evaluated;
-      
-      const logEntry = {
+
+      const promptTokens = prompt.split(/\s+/).filter(Boolean).length;
+      const responseTokens = dataTokensEvaluated || dataContent.split(/\s+/).filter(Boolean).length;
+
+      // Log the PROMPT
+      const promptLogEntry = {
         timestamp: new Date().toISOString(),
         modelId: rm.modelId,
-        modelName,
-        prompt,
-        response: dataContent,
-        requestTokens: dataEvalTokens || prompt.split(' ').length,
-        responseTokens: dataTokensEvaluated || dataContent.split(' ').length,
+        message: prompt,
+        type: 'PROMPT' as const,
+        tokens: dataEvalTokens || promptTokens,
+      };
+      appendChatLog(promptLogEntry);
+
+      // Log the RESPONSE
+      const responseLogEntry = {
+        timestamp: new Date().toISOString(),
+        modelId: rm.modelId,
+        message: dataContent,
+        type: 'RESPONSE' as const,
+        tokens: responseTokens,
         durationMs,
       };
-      appendChatLog(logEntry);
+      appendChatLog(responseLogEntry);
 
       updateMetrics(
         rm.modelId,
         modelName,
-        logEntry.requestTokens || 0,
-        logEntry.responseTokens || 0,
+        promptLogEntry.tokens || 0,
+        responseLogEntry.tokens || 0,
         durationMs
       );
     }
