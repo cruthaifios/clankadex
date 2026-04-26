@@ -1,5 +1,11 @@
 import * as http from 'http';
 import { createProxy, stopProxy, ProxyConfig } from './proxy';
+import { appendChatLog, updateMetrics } from './logging';
+
+jest.mock('./logging', () => ({
+  appendChatLog: jest.fn(),
+  updateMetrics: jest.fn(),
+}));
 
 function createTestServer(port: number, responseBody: string): http.Server {
   return http.createServer((_req, res) => {
@@ -63,6 +69,10 @@ describe('Proxy', () => {
 
   afterEach(async () => {
     await sleep(100);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   test('forwards POST request to target server and returns response', async () => {
@@ -147,6 +157,55 @@ describe('Proxy', () => {
     expect(response.statusCode).toBe(502);
     const responseJson = JSON.parse(response.body);
     expect(responseJson.error).toBe('Proxy error');
+
+    stopProxy(modelId);
+    await sleep(100);
+  }, 10000);
+
+  test('logs prompt and response via appendChatLog for chat completions', async () => {
+    const proxyPort = 19004;
+    const modelId = 'test-model-logging';
+    const config: ProxyConfig = {
+      proxyPort,
+      targetHost: '127.0.0.1',
+      targetPort,
+    };
+
+    const proxyServer = createProxy(config, modelId);
+
+    await new Promise<void>((resolve, reject) => {
+      proxyServer.on('listening', resolve);
+      proxyServer.on('error', reject);
+      proxyServer.listen(proxyPort, '127.0.0.1');
+    });
+
+    const requestBody = JSON.stringify({
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+
+    const response = await makeRequest(proxyPort, '/v1/chat/completions', requestBody);
+
+    expect(response.statusCode).toBe(200);
+    expect(appendChatLog).toHaveBeenCalledTimes(2);
+    expect(appendChatLog).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      type: 'PROMPT',
+      message: 'Hello',
+      modelId,
+    }));
+    expect(appendChatLog).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      type: 'RESPONSE',
+      message: 'Hello from target server',
+      modelId,
+      durationMs: expect.any(Number),
+    }));
+    expect(updateMetrics).toHaveBeenCalledTimes(1);
+    expect(updateMetrics).toHaveBeenCalledWith(
+      modelId,
+      modelId,
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number)
+    );
 
     stopProxy(modelId);
     await sleep(100);

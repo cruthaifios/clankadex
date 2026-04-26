@@ -109,10 +109,85 @@ export function createProxy(config: ProxyConfig, modelId: string): http.Server {
   proxy.on('proxyReq', (proxyReq, req) => {
     console.log(`[PROXY REQUEST] ${req.method} ${req.url} -> ${targetUrl}`);
     console.log(`[PROXY HEADERS] Host: ${proxyReq.getHeader('host')}`);
+
+    // Capture and log prompt for chat/completion endpoints
+    const url = req.url || '';
+    if (!url.includes('completion')) return;
+
+    let body = '';
+    const originalWrite = proxyReq.write.bind(proxyReq);
+    const originalEnd = proxyReq.end.bind(proxyReq);
+
+    (proxyReq as any).write = (chunk: any, encoding?: any, callback?: any) => {
+      if (chunk) {
+        body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+      }
+      return originalWrite(chunk, encoding, callback);
+    };
+
+    (proxyReq as any).end = (chunk?: any, encoding?: any, callback?: any) => {
+      if (chunk) {
+        body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+      }
+      const prompt = extractPrompt(body);
+      const promptTokens = prompt.split(/\s+/).filter(Boolean).length;
+
+      const promptLogEntry: ChatLogEntry = {
+        timestamp: new Date().toISOString(),
+        modelId,
+        message: prompt,
+        type: 'PROMPT',
+        tokens: promptTokens,
+      };
+      appendChatLog(promptLogEntry);
+      (req as any).__promptTokens = promptTokens;
+
+      return originalEnd(chunk, encoding, callback);
+    };
   });
 
-  proxy.on('proxyRes', (proxyRes: any, req: any) => {
+  proxy.on('proxyRes', (proxyRes: any, req: any, res: any) => {
     console.log(`[PROXY RESPONSE] ${req.url} <- Status: ${proxyRes.statusCode}`);
+
+    const url = req.url || '';
+    if (!url.includes('completion')) return;
+
+    let body = '';
+    const originalWrite = res.write.bind(res);
+    const originalEnd = res.end.bind(res);
+
+    (res as any).write = (chunk: any, encoding?: any, callback?: any) => {
+      if (chunk) {
+        body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+      }
+      return originalWrite(chunk, encoding, callback);
+    };
+
+    (res as any).end = (chunk?: any, encoding?: any, callback?: any) => {
+      if (chunk) {
+        body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+      }
+      const startTime = req.__startTime || Date.now();
+      const durationMs = Date.now() - startTime;
+      const isStreaming = proxyRes.headers && proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('text/event-stream');
+      const { content, tokens } = extractResponseContent(body, isStreaming);
+      const responseTokens = tokens || content.split(/\s+/).filter(Boolean).length;
+      const promptTokens = req.__promptTokens || 0;
+
+      const responseLogEntry: ChatLogEntry = {
+        timestamp: new Date().toISOString(),
+        modelId,
+        message: content,
+        type: 'RESPONSE',
+        tokens: responseTokens,
+        durationMs,
+      };
+      appendChatLog(responseLogEntry);
+
+      updateMetrics(modelId, modelId, promptTokens, responseTokens, durationMs);
+
+      return originalEnd(chunk, encoding, callback);
+    };
   });
 
   proxy.on('error', (err, req, res) => {
@@ -125,6 +200,7 @@ export function createProxy(config: ProxyConfig, modelId: string): http.Server {
 
   const server = http.createServer((req, res) => {
     console.log(`[PROXY INCOMING] ${req.method} ${req.url}`);
+    (req as any).__startTime = Date.now();
     proxy.web(req, res);
   });
 
@@ -166,58 +242,3 @@ export function stopAllProxies(): void {
   }
 }
 
-// Save captured request/response data
-export function saveCapturedData(modelId: string, request: CapturedRequest, response: CapturedResponse): void {
-  try {
-    const promptTokens = request.prompt.split(/\s+/).filter(Boolean).length;
-    const responseTokens = response.content.split(/\s+/).filter(Boolean).length;
-
-    // Update metrics
-    updateMetrics(
-      modelId,
-      modelId,
-      promptTokens,
-      responseTokens,
-      response.durationMs
-    );
-
-    // Log PROMPT entry
-    const promptLogEntry: ChatLogEntry = {
-      timestamp: new Date().toISOString(),
-      modelId,
-      message: request.prompt,
-      type: 'PROMPT',
-      tokens: promptTokens,
-    };
-    appendChatLog(promptLogEntry);
-
-    // Log RESPONSE entry
-    const responseLogEntry: ChatLogEntry = {
-      timestamp: new Date().toISOString(),
-      modelId,
-      message: response.content,
-      type: 'RESPONSE',
-      tokens: responseTokens,
-      durationMs: response.durationMs,
-    };
-    appendChatLog(responseLogEntry);
-  } catch (e) {
-    console.error('Error saving captured data:', e);
-  }
-}
-
-// Get captured data files
-export function listCapturedDataFiles(): string[] {
-  try {
-    const metricsDir = require('./store').getMetricsDir();
-    const fs = require('fs');
-    
-    if (!fs.existsSync(metricsDir)) {
-      return [];
-    }
-    
-    return fs.readdirSync(metricsDir).filter((f: string) => f.startsWith('metrics_') && f.endsWith('.json'));
-  } catch (e) {
-    return [];
-  }
-}
