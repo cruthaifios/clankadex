@@ -26,6 +26,8 @@ export function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [showLogsView, setShowLogsView] = useState(false);
   const [logs, setLogs] = useState<ChatLogEntry[]>([]);
+  const [logDates, setLogDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -127,13 +129,35 @@ export function App() {
   const handleViewLogs = async () => {
     if (!selectedId) return;
     setShowLogsView(true);
-    const fetchedLogs = await api.fetchLogsForModel(selectedId);
-    setLogs(fetchedLogs);
+    const fileNames = await api.fetchLogFilesForModel(selectedId);
+    const dateRegex = /log_([0-9]{4}-[0-9]{2}-[0-9]{2})_/;
+    const dates = [...new Set(fileNames.map(f => {
+      const m = f.match(dateRegex);
+      return m?.[1] || '';
+    }))].filter(Boolean).sort().reverse();
+    setLogDates(dates);
+    setLogs([]);
+    setSelectedDate(null);
   };
 
   const handleCloseLogs = () => {
     setShowLogsView(false);
     setLogs([]);
+    setLogDates([]);
+    setSelectedDate(null);
+  };
+
+  const handleDateSelect = async (date: string) => {
+    if (!selectedId) return;
+    const fileName = `log_${date}_${selectedId}.json`;
+    const fetchedLogs = await api.fetchLogsForDate(selectedId, fileName);
+    setLogs(fetchedLogs);
+    setSelectedDate(date);
+  };
+
+  const clearDateSelection = () => {
+    setLogs([]);
+    setSelectedDate(null);
   };
 
   if (showSettings && config) {
@@ -286,7 +310,7 @@ export function App() {
         />
       )}
 
-      {showLogsView && (
+{showLogsView && (
         <Paper
           elevation={0}
           sx={{
@@ -306,39 +330,75 @@ export function App() {
             borderColor: 'divider',
           }}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#fff' }}>
               {selectedModel?.name} - Logs
             </Typography>
-            <IconButton size="small" onClick={handleCloseLogs}>
-              <ArrowBackIcon />
-            </IconButton>
-          </Stack>
-          <Stack spacing={1}>
-             {logs.length === 0 ? (
-                <Typography color="text.secondary" variant="body2" sx={{ p: 2, textAlign: 'center' }}>
-                  No logs available for this model.
-                </Typography>
-              ) : (
-                logs.map((log: ChatLogEntry, idx: number) => (
-                  <Paper key={idx} elevation={0} sx={{ bgcolor: log.type === 'PROMPT' ? 'rgba(0, 100, 0, 0.1)' : 'rgba(100, 0, 0, 0.1)', p: 1.5, borderRadius: 1, wordBreak: 'break-word' }}>
-                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      {new Date(log.timestamp).toLocaleString()} - {log.type}
-                    </Typography>
-                    <Typography variant="body2">{log.message}</Typography>
-                    {log.tokens && (
-                      <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                        Tokens: {log.tokens}
-                      </Typography>
-                    )}
-                    {log.durationMs && (
-                      <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                        Duration: {log.durationMs}ms
-                      </Typography>
-                    )}
-                  </Paper>
-                ))
+            <Stack direction="row" spacing={1}>
+              {selectedDate && (
+                <Button size="small" startIcon={<ArrowBackIcon />} onClick={clearDateSelection}>
+                  Dates
+                </Button>
               )}
+              <IconButton size="small" onClick={handleCloseLogs}>
+                <ArrowBackIcon />
+              </IconButton>
+            </Stack>
+          </Stack>
+          <Stack spacing={1} sx={{ height: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+            {selectedDate ? (
+              <>
+                {logs.length === 0 ? (
+                  <Typography color="text.secondary" variant="body2" sx={{ p: 2, textAlign: 'center' }}>
+                    No logs available for {selectedDate}.
+                  </Typography>
+                ) : (
+                  logs.map((log: ChatLogEntry, idx: number) => (
+                    <Paper key={idx} elevation={0} sx={{ bgcolor: log.type === 'PROMPT' ? 'rgba(0, 100, 0, 0.1)' : 'rgba(100, 0, 0, 0.1)', p: 1.5, borderRadius: 1, wordBreak: 'break-word' }}>
+                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                        {new Date(log.timestamp).toLocaleString()} - {log.type}
+                      </Typography>
+                      <Typography variant="body2">{log.message}</Typography>
+                      {log.tokens && (
+                        <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                          Tokens: {log.tokens}
+                        </Typography>
+                      )}
+                      {log.durationMs && (
+                        <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                          Duration: {log.durationMs}ms
+                        </Typography>
+                      )}
+                    </Paper>
+                  ))
+                )}
+              </>
+            ) : (
+              <>
+                {logDates.length === 0 ? (
+                  <Typography color="text.secondary" variant="body2" sx={{ p: 2, textAlign: 'center' }}>
+                    No log dates available for this model.
+                  </Typography>
+                ) : (
+                  logDates.map((date: string) => (
+                    <Button
+                      key={date}
+                      fullWidth
+                      variant="outlined"
+                      sx={{
+                        justifyContent: 'flex-start',
+                        color: '#fff',
+                        borderColor: 'divider',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+                      }}
+                      onClick={() => handleDateSelect(date)}
+                    >
+                      {date}
+                    </Button>
+                  ))
+                )}
+              </>
+            )}
           </Stack>
         </Paper>
       )}

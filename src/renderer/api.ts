@@ -80,13 +80,13 @@ export async function fetchMetricsForModel(modelName: string): Promise<any> {
   return res.json();
 }
 
-export async function fetchLogsForModel(modelId: string): Promise<ChatLogEntry[]> {
-  const res = await fetch(`${BASE}/api/metrics/${modelId}/logs`);
+export async function fetchLogFilesForModel(modelId: string): Promise<string[]> {
+  const res = await fetch(`${BASE}/api/metrics/${modelId}/logs/files`);
   return res.json();
 }
 
-export async function fetchLogFilesForModel(modelId: string): Promise<ChatLogEntry[]> {
-  const res = await fetch(`${BASE}/api/metrics/${modelId}/logs/files`);
+export async function fetchLogsForDate(modelId: string, fileName: string): Promise<ChatLogEntry[]> {
+  const res = await fetch(`${BASE}/api/metrics/logs/${fileName}`);
   return res.json();
 }
 
