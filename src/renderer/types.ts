@@ -23,15 +23,15 @@ export interface AppConfig {
   loggingEnabled: boolean;
 }
 
+export type ChatLogType = 'PROMPT' | 'RESPONSE'
+
 export interface ChatLogEntry {
   timestamp: string;
   modelId: string;
-  modelName: string;
-  prompt: string;
-  response: string;
-  requestTokens?: number;
-  responseTokens?: number;
-  durationMs: number;
+  message: string;
+  type: ChatLogType;
+  tokens?: number;
+  durationMs?: number;
 }
 
 export interface ModelMetrics {

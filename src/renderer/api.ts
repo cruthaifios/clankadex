@@ -1,4 +1,4 @@
-import { ModelEntry, AppConfig } from './types';
+import { ModelEntry, AppConfig, ChatLogEntry } from './types';
 
 const BASE = '';
 
@@ -80,8 +80,13 @@ export async function fetchMetricsForModel(modelName: string): Promise<any> {
   return res.json();
 }
 
-export async function fetchLogsForModel(modelName: string): Promise<any[]> {
-  const res = await fetch(`${BASE}/api/metrics/${modelName}/logs`);
+export async function fetchLogsForModel(modelId: string): Promise<ChatLogEntry[]> {
+  const res = await fetch(`${BASE}/api/metrics/${modelId}/logs`);
+  return res.json();
+}
+
+export async function fetchLogFilesForModel(modelId: string): Promise<ChatLogEntry[]> {
+  const res = await fetch(`${BASE}/api/metrics/${modelId}/logs/files`);
   return res.json();
 }
 

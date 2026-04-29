@@ -6,7 +6,8 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { ModelEntry, AppConfig } from '../types';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ModelEntry, AppConfig, ChatLogEntry } from '../types';
 import * as api from '../api';
 import { Sidebar } from './Sidebar';
 import { AddModelDialog } from './AddModelDialog';
@@ -23,6 +24,8 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showModelSettingsDialog, setShowModelSettingsDialog] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [showLogsView, setShowLogsView] = useState(false);
+  const [logs, setLogs] = useState<ChatLogEntry[]>([]);
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -121,6 +124,18 @@ export function App() {
     setShowModelSettingsDialog(null);
   };
 
+  const handleViewLogs = async () => {
+    if (!selectedId) return;
+    setShowLogsView(true);
+    const fetchedLogs = await api.fetchLogsForModel(selectedId);
+    setLogs(fetchedLogs);
+  };
+
+  const handleCloseLogs = () => {
+    setShowLogsView(false);
+    setLogs([]);
+  };
+
   if (showSettings && config) {
     return (
       <SettingsPanel
@@ -184,16 +199,19 @@ export function App() {
                 </Typography>
               </Stack>
               <Box>
-                {!isRunning ? (
-                  <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={handleStart}>
-                    Start
-                  </Button>
-                ) : (
-                  <Button variant="contained" color="secondary" startIcon={<StopIcon />} onClick={handleStop}>
-                    Stop
-                  </Button>
-                )}
-              </Box>
+                 {!isRunning ? (
+                   <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={handleStart}>
+                     Start
+                   </Button>
+                 ) : (
+                   <Button variant="contained" color="secondary" startIcon={<StopIcon />} onClick={handleStop}>
+                     Stop
+                   </Button>
+                 )}
+                 <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleViewLogs} sx={{ ml: 1 }}>
+                   View Logs
+                 </Button>
+               </Box>
             </Stack>
 
             {/* Model metadata chips */}
@@ -266,6 +284,63 @@ export function App() {
           onSave={handleSaveModelSettings}
           onClose={() => setShowModelSettingsDialog(null)}
         />
+      )}
+
+      {showLogsView && (
+        <Paper
+          elevation={0}
+          sx={{
+            position: 'fixed',
+            top: 60,
+            right: 2,
+            width: 500,
+            height: 'calc(100vh - 60px)',
+            bgcolor: '#0d0d1a',
+            borderRadius: 2,
+            p: 1.5,
+            fontFamily: '"Fira Code", "Consolas", monospace',
+            fontSize: 13,
+            color: 'primary.main',
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#fff' }}>
+              {selectedModel?.name} - Logs
+            </Typography>
+            <IconButton size="small" onClick={handleCloseLogs}>
+              <ArrowBackIcon />
+            </IconButton>
+          </Stack>
+          <Stack spacing={1}>
+             {logs.length === 0 ? (
+                <Typography color="text.secondary" variant="body2" sx={{ p: 2, textAlign: 'center' }}>
+                  No logs available for this model.
+                </Typography>
+              ) : (
+                logs.map((log: ChatLogEntry, idx: number) => (
+                  <Paper key={idx} elevation={0} sx={{ bgcolor: log.type === 'PROMPT' ? 'rgba(0, 100, 0, 0.1)' : 'rgba(100, 0, 0, 0.1)', p: 1.5, borderRadius: 1, wordBreak: 'break-word' }}>
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      {new Date(log.timestamp).toLocaleString()} - {log.type}
+                    </Typography>
+                    <Typography variant="body2">{log.message}</Typography>
+                    {log.tokens && (
+                      <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                        Tokens: {log.tokens}
+                      </Typography>
+                    )}
+                    {log.durationMs && (
+                      <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                        Duration: {log.durationMs}ms
+                      </Typography>
+                    )}
+                  </Paper>
+                ))
+              )}
+          </Stack>
+        </Paper>
       )}
     </Box>
   );

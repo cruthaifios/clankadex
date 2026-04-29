@@ -96,12 +96,13 @@ function getLogFilePath(filename: string): string {
 
 export function getLogs(filename: string): ChatLogEntry[] {
   const filepath = getLogFilePath(filename);
+  console.log("SAM getting logs from filepath: ", filepath);
   return readJsonFromPath(filepath, []);
 }
 
 export function appendLogs(entry: ChatLogEntry, filename: string): ChatLogEntry[] {
   const filepath = getLogFilePath(filename);
-  const logs = getLogs(filepath);
+  const logs: ChatLogEntry[] = readJsonFromPath(filepath, []);
   logs.push(entry)
   writeJsonToPath(filepath, logs);
   return logs;

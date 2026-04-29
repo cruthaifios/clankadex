@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import {
   loadMetrics,
   loadTodayLogs,
+  loadLogFilesForModel,
   getMetricsSummary,
   getLogFiles,
   listMetricsFiles,
@@ -60,6 +61,12 @@ metricsRouter.get('/:modelName', (req: Request, res: Response) => {
   
   const summary = getMetricsSummary(metrics);
   res.json({ ...metrics, ...summary });
+});
+
+metricsRouter.get('/:modelId/logs/files', (req: Request, res: Response) => {
+  const modelId = req.params.modelId;
+  const logs = loadLogFilesForModel(modelId);
+  res.json(logs);
 });
 
 metricsRouter.get('/:modelName/logs', (req: Request, res: Response) => {

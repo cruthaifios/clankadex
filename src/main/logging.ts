@@ -1,20 +1,26 @@
 import { appendLogs, getLogs, listLogFiles, saveMetrics, loadMetrics, listMetricsFiles } from './store';
 import { ChatLogEntry, ModelMetrics } from './types';
 
-function getLogFileName(modelName: string): string {
-  const date = new Date().toISOString().split('T')[0];
-  const safeName = modelName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `log_${date}_${safeName}.json`;
+function getLogFileName(modelId: string, onDate: string): string {
+  return `log_${onDate}_${modelId}.json`;
 }
 
 export function appendChatLog(entry: ChatLogEntry): void {
-  const filename = getLogFileName(entry.modelId);
+  const date = new Date().toISOString().split('T')[0];
+  const filename = getLogFileName(entry.modelId, date);
   appendLogs(entry, filename);
 }
 
-export function loadTodayLogs(modelName: string): ChatLogEntry[] {
-  const filename = getLogFileName(modelName);
+export function loadTodayLogs(modelId: string): ChatLogEntry[] {
+  const date = new Date().toISOString().split('T')[0];
+  const filename = getLogFileName(modelId, date);
+  console.log("SAM getting logs for filename: ", filename, ", modelName: ", modelId);
   return getLogs(filename);
+}
+
+export function loadLogFilesForModel(modelId: string): string[] {
+  const logFiles = getLogFiles();
+  return logFiles.filter(file => file.endsWith(`${modelId}.json`));
 }
 
 export function getLogFiles(): string[] {
