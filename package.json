@@ -1,6 +1,6 @@
 {
   "name": "clankadex",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Local AI Model Library Manager",
   "author": "Cruthaifios <cruthaifios@gmail.com>",
   "main": "dist/main/main.js",
@@ -46,19 +46,7 @@
     },
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.developer-tools",
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
+      "category": "public.app-category.developer-tools"
     },
     "win": {
       "target": "nsis"

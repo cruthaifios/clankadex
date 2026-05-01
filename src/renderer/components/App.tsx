@@ -190,7 +190,7 @@ export function App() {
           <Stack direction="row">
             <img src="/img/Clankadex-small.png" style={{ height: 32, marginRight: 8 }} />
             <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-              Clankadex
+              CLANKADEX
             </Typography>
           </Stack>
           <Stack direction="row" spacing={1}>
@@ -207,7 +207,7 @@ export function App() {
         {/* Main content */}
         {!selectedModel ? (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography color="text.secondary" variant="h6">← Select a model from the sidebar</Typography>
+            <Typography color="text.secondary" variant="h6">Select a model from the sidebar</Typography>
           </Box>
         ) : (
           <>

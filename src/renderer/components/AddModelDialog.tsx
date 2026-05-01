@@ -70,8 +70,10 @@ export function AddModelDialog({ defaultContextSize, defaultGpuLayers, onAdd, on
               <Stack direction="row" spacing={2}>
                 <TextField label="Format" value={format} onChange={e => setFormat(e.target.value)} placeholder="gguf" />
                 <TextField label="Context Size" type="number" value={contextSize} onChange={e => setContextSize(Number(e.target.value))} />
+              </Stack>
+              <Stack direction="row" spacing={2}>
                 <TextField label="GPU Layers" type="number" value={gpuLayers} onChange={e => setGpuLayers(Number(e.target.value))} />
-                <TextField label="Proxy Port" type="number" value={proxyPort} onChange={e => setProxyPort(Number(e.target.value))} helperText="Proxy port for logging (default 8081)" sx={{ width: 160 }} />
+                <TextField label="Proxy Port" type="number" value={proxyPort} onChange={e => setProxyPort(Number(e.target.value))} helperText="Proxy port for logging (default 8081)" />
               </Stack>
             </>
           )}

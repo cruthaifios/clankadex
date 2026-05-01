@@ -5,6 +5,10 @@ import { copyFileSync, mkdirSync } from 'fs';
 mkdirSync('dist/renderer', { recursive: true });
 copyFileSync('src/renderer/index.html', 'dist/renderer/index.html');
 
+// Copy font to dist/renderer/font
+mkdirSync('dist/renderer/font', { recursive: true });
+copyFileSync('src/renderer/assets/font/KdamThmorPro-Regular.ttf', 'dist/renderer/font/KdamThmorPro-Regular.ttf');
+
 await build({
   entryPoints: ['src/renderer/index.tsx'],
   bundle: true,
