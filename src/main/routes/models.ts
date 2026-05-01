@@ -228,9 +228,6 @@ modelRouter.post('/:id/start', async (req: Request, res: Response) => {
   };
   
   const proxyServer = createProxy(proxyConfig, model.id);
-  // proxyServer.listen(proxyPort, model.host || '127.0.0.1', () => {
-  //   console.log(`Proxy for ${model.name} listening on ${proxyPort}, forwarding to ${model.host}:${serverPort}`);
-  // });
 
   await new Promise<void>((resolve, reject) => {
     proxyServer.on('listening', resolve);

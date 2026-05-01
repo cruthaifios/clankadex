@@ -15,7 +15,7 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Segoe UI", "Roboto", "Oxygen", sans-serif',
+    fontFamily: '"Kdam Thmor Pro", "Roboto", "Oxygen", sans-serif',
   },
   components: {
     MuiButton: {

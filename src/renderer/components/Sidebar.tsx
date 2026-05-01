@@ -6,6 +6,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CircleIcon from '@mui/icons-material/Circle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { ModelEntry } from '../types';
+import { MonsterSVG, generateMonster } from './MonsterGenerator';
 
 interface Props {
   models: ModelEntry[];
@@ -51,10 +52,11 @@ export function Sidebar({ models, selectedId, runningModelIds = [], onSelect, on
               }}
             >
               <ListItemIcon sx={{ minWidth: 28 }}>
-                <CircleIcon sx={{
+                {/* <CircleIcon sx={{
                   fontSize: 10,
                   color: runningModelIds.includes(m.id) ? 'primary.main' : 'grey.700',
-                }} />
+                }} /> */}
+                <MonsterSVG parts={generateMonster(parseInt(m.id))} size={40} />
               </ListItemIcon>
               <ListItemText
                 primary={m.name}
